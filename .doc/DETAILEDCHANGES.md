@@ -16,3 +16,8 @@
   - `text/textmaster.sh` (`+textmaster` / `+text`)
   - `file/filemaster.sh` (`+filemaster` / `+file`)
   - `web/webmaster.sh` (`+webmaster` / `+web`)
+
+### Persistence Fix (`.core/persist.sh` & `scripter`)
+- Added explicit error reporting in `_upsert_rc_block()` when an RC file is not writable, plus clear `Added`/`Updated` status and block preview.
+- Added `Press [Enter] to return to menu...` pause in `scripter` after `P) Make Persistent` so the output no longer flashes away.
+- Verified `./scripter --persist` on macOS (`~/.zshrc` updated cleanly without duplicates).

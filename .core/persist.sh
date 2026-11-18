@@ -18,9 +18,14 @@ EOF
 _upsert_rc_block() {
     local rc_file="$1"
     [[ -z "$rc_file" ]] && return 1
-    touch "$rc_file" 2>/dev/null || return 1
+    if ! touch "$rc_file" 2>/dev/null; then
+        ui_err "Cannot write to $rc_file (permission denied)."
+        return 1
+    fi
 
+    local action="Added"
     if grep -q "# >>> scripter-hub >>>" "$rc_file" 2>/dev/null; then
+        action="Updated"
         local tmp_file
         tmp_file="$(mktemp)"
         awk '
@@ -32,7 +37,8 @@ _upsert_rc_block() {
 
     printf "\n" >> "$rc_file"
     _persist_block >> "$rc_file"
-    ui_ok "Updated $rc_file"
+    ui_ok "$action scripter-hub block in $rc_file:"
+    _persist_block | sed 's/^/    /'
 }
 
 persist_system() {

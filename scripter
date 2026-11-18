@@ -205,7 +205,11 @@ interactive_menu() {
             16) route_module "+rename_ebooks" ;;
             17) route_module "+qnapmaster" ;;
             d|D) deps_menu ;;
-            p|P) persist_system ;;
+            p|P)
+                persist_system
+                printf "\n"
+                read -rp "Press [Enter] to return to menu..." _
+                ;;
             0|q|Q|exit) exit 0 ;;
             *) ui_warn "Invalid option: $choice" ;;
         esac
