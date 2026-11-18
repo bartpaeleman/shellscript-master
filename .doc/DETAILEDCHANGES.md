@@ -83,3 +83,7 @@
 ### Default `Enter` = `0` in Menus & Standalone Cleanup
 - Added `ui_read_menu_choice` in `.core/ui.sh` (`Choice [0]: `) so empty `Enter` input defaults to `0` across `scripter`, `.core/aliases.sh`, `qnapmaster.sh`, and all 7 `modules/common/*` modules.
 - Audited and removed legacy `macscripts/` and `unixscripts/` reference directories after passing full quarantine smoke-tests (`shellscript-master` runs 100% standalone).
+
+### QNAP Target Profile Selector & Legacy Alias Support (`.core/aliases.sh`)
+- Added `alias_select_profile` and `alias_scan_all_qnap` for QNAP (`/share/homes/<user>/.profile`, `/root/.profile`, `/root/.bashrc`, `/etc/profile`, `/opt/etc/profile`).
+- Updated `_alias_read_list` to include standalone legacy `alias ` lines and `_alias_write_list` to handle `sudo` + `.bak` backups + `[VOLATILE RAM]` warnings.
