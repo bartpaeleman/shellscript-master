@@ -94,3 +94,6 @@
 ### QNAP `/share/Public/.bash_aliases`, Direct Module Aliases & Legacy Migration
 - Added `/share/Public/.bash_aliases` `[PERSISTENT — Centraal Alias Bestand]` to `.core/aliases.sh`, `qnapmaster.sh`, and `# >>> scripter-hook >>>` in `.core/persist.sh`.
 - Added `Directe Module-Aliassen` preset (`gitmaster`, `dockermaster`, `dbmaster`, etc.) for QNAP and macOS, updated QNAP Webserver defaults to `/share/Web/`, `/share/Web/DEV/`, `/share/Web/TEST/`, and added `alias_migrate_unixscripts` to migrate legacy `/share/Public/unixscripts` aliases while preserving custom Python/Web rules.
+
+### `AGENTS.md` Architecture & QNAP Standards Update
+- Documented functional menu grouping, dynamic numbering, shortcodes (`-x`), `Enter = 0` (`ui_read_menu_choice`), `ui_run_safe`, and QNAP/BusyBox compatibility & persistence rules in `AGENTS.md`.
