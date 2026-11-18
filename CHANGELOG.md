@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0] - 2026-11-18
+
+### Added & Changed
+- **Hub (`./scripter`)**: Hernoemd van `master` naar `scripter` met `+modulenaam`/`--modulenaam` routing, stille `_startup_precheck()`, en platform-secties (`CORE / UNIVERSAL`, `macOS WORKSTATION`, `QNAP NAS & LINUX SERVER`).
+- **Core (`.core/`)**: Centrale TUI-bibliotheek (`ui.sh`), OS-specifieke shell-persistentie (`persist.sh` / `--persist`), en portable OS-wrappers (`os_sed_inplace`, `os_readlink_f`).
+- **Universal Modules (`modules/common/`)**: 7 cross-platform modules toegevoegd (`gitmaster`, `containermaster`, `dbmaster`, `datamaster`, `textmaster`, `filemaster`, `webmaster`).
+
 ## [1.0.0] - 2026-11-18
 
 ### Added
