@@ -27,6 +27,17 @@ ui_pause() {
     read -rp "Druk op [Enter] of typ '0' om terug te keren... " _
 }
 
+ui_read_menu_choice() {
+    local __var_name="$1"
+    local __label="${2:-Choice}"
+    local __val=""
+    read -rp "${__label} [0]: " __val
+    __val="${__val#"${__val%%[![:space:]]*}"}"
+    __val="${__val%"${__val##*[![:space:]]}"}"
+    [[ -z "$__val" ]] && __val="0"
+    printf -v "$__var_name" '%s' "$__val"
+}
+
 ui_run_safe() {
     local __desc="$1"
     shift

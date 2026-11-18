@@ -184,7 +184,8 @@ file_menu() {
         ui_item "9" "Largest Files"      "Top 15 largest files"
         ui_item "0" "Terug"              ""
         printf "\n"
-        read -rp "Choice: " c
+        local c=""
+        ui_read_menu_choice c "Choice"
         case "$c" in
             1) ui_run_safe "Bulk Rename" opt_rename ;;
             2) ui_run_safe "Create Dir Tree" opt_mkdirs ;;

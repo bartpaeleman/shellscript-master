@@ -85,7 +85,8 @@ text_menu() {
         ui_item "5" "Case Conversion"  "UPPERCASE / lowercase"
         ui_item "0" "Terug"            ""
         printf "\n"
-        read -rp "Choice: " c
+        local c=""
+        ui_read_menu_choice c "Choice"
         case "$c" in
             1) ui_run_safe "Text Statistics" opt_stats ;;
             2) ui_run_safe "Search & Replace" opt_replace ;;

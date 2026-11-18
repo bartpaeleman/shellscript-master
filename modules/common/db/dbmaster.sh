@@ -74,7 +74,8 @@ db_menu() {
         ui_item "3" "Check DB Clients" "sqlite3, psql, mysql, mongosh, redis-cli"
         ui_item "0" "Terug"            ""
         printf "\n"
-        read -rp "Choice: " c
+        local c=""
+        ui_read_menu_choice c "Choice"
         case "$c" in
             1) ui_run_safe "Backup Database" opt_backup ;;
             2) ui_run_safe "Analyze Database" opt_analyze ;;

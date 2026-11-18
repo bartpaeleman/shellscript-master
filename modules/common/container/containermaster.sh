@@ -219,7 +219,8 @@ container_menu() {
         ui_item "10" "System Cleanup"    "Prune containers, images, volumes"
         ui_item "0"  "Terug"             ""
         printf "\n"
-        read -rp "Choice: " c
+        local c=""
+        ui_read_menu_choice c "Choice"
         case "$c" in
             1)  ui_run_safe "List Containers" opt_list ;;
             2)  ui_run_safe "View Live Logs" opt_logs ;;

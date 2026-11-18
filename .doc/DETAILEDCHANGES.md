@@ -71,3 +71,15 @@
 ### QNAP Persistence & Profile Scanner / Editor (`modules/qnap/qnapmaster.sh`)
 - Added `qnap_persistence_scan` (`scripter -q persistence`) scanning `[PERSISTENT]` (`/share/homes/*/.profile`, `/opt/etc/profile`, `/opt/bin/scripter`, `/etc/config/autorun.sh`) and `[SESSION]` (`/root/.*`, `/etc/.*`, `/usr/local/bin/scripter`, `/usr/bin/scripter`) locations.
 - Added safe per-file actions: timestamped `.bak` backup, `sudo`-aware editing (`nano`/`vim`/`vi`), rule preview, and `# >>> scripter-hub >>>` block removal.
+
+### Cross-Platform Alias Manager (`.core/aliases.sh`, `qnapmaster`, `macmaster`)
+- Added `.core/aliases.sh` managing `# >>> scripter-aliases >>>` blocks with `.bak` backups, numbered listing/editing/deletion, and `read -e` Tab path-autocomplete.
+- Added Presets Wizard: Webserver `prd`/`dev`/`tst` (`/share/Web` on QNAP, `~/Sites` on macOS), `pyvenv` (`.dep/.venv/bin/activate`), and macOS shortcuts (`flushdns`, `showfiles`, `hidefiles`, `brewup`).
+- Integrated via `./scripter -q aliases` and `./scripter -m aliases`.
+
+### Fix `os_is_macos: command not found` on QNAP (`.core/aliases.sh`)
+- Changed `.core/aliases.sh` to check `declare -F os_is_macos` before sourcing `.core/os_detect.sh`, ensuring OS helper functions are always loaded even when `OS_TYPE` is already exported.
+
+### Default `Enter` = `0` in Menus & Standalone Cleanup
+- Added `ui_read_menu_choice` in `.core/ui.sh` (`Choice [0]: `) so empty `Enter` input defaults to `0` across `scripter`, `.core/aliases.sh`, `qnapmaster.sh`, and all 7 `modules/common/*` modules.
+- Audited and removed legacy `macscripts/` and `unixscripts/` reference directories after passing full quarantine smoke-tests (`shellscript-master` runs 100% standalone).
