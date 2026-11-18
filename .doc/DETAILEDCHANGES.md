@@ -55,3 +55,6 @@
 - **`.core/ui.sh`**: Added `ui_run_safe "<desc>" <cmd...>` try/catch wrapper and updated `ui_pause()` to `Druk op [Enter] of typ '0' om terug te keren...`.
 - **`scripter`, `qnapmaster.sh`, and all 7 `modules/common/*` modules**: Standardized `0) Terug` / `0) Afsluiten (Exit)` and wrapped interactive actions in `ui_run_safe`.
 - **`AGENTS.md`**: Added `0` navigation and `ui_run_safe` as permanent coding standards.
+
+### Repository Rename (`shellscript-master`)
+- Verified `origin` remote points to `https://github.com/bartpaeleman/shellscript-master.git` and confirmed no stale `unified-master-hub` references remain in tracked docs/scripts.
