@@ -117,3 +117,4 @@
 ### System-Wide UI & Navigation Audit (`.core/deps.sh`, `scripter`, `modules/`)
 - Upgraded `deps_menu` (`D) Dependency Center`) in `.core/deps.sh` to `.core/ui.sh` (`ui_clear_screen`, `ui_header`, `ui_item`, `ui_read_menu_choice` with `Enter = 0`, `ui_run_safe`, `0) Terug`).
 - Verified `bash -n`, `python3 -m py_compile`, `./scripter --all --help`, `OS_TYPE=QNAP ./scripter --help`, and `Enter = 0` across `P`, `D`, `H`, and all hub-managed modules.
+- Standardized `0) Terug` and `Enter = 0` across `cybermaster`, `audiomaster`, `videomaster`, `imagemaster`, `karaokemaster`, and `VIDEO/video-master.sh` (zero `X)`/`q)`/`b)` exit options remaining).

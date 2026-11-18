@@ -936,7 +936,7 @@ while true; do
     echo "6) Lokaal Mediabestand Audio Extraheren (Extract Audio Only)"
     echo -e "-----------------------------------"
     echo "9) Update Afhankelijkheden (yt-dlp/ffmpeg)"
-    echo "X) Exit"
+    echo "0) Terug"
     echo ""
 
     read -p "Maak uw keuze: " choice
@@ -948,7 +948,7 @@ while true; do
         5) check_dependencies && media_info ;;
         6) check_dependencies && extract_local_audio ;;
         9) update_dependencies ;;
-        [xX]) exit 0 ;;
+        0|[xX]|[qQ]) exit 0 ;;
         *) echo -e "${RED}Ongeldige keuze.${NC}" ; pause ;;
     esac
 done
