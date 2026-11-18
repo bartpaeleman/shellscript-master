@@ -260,6 +260,7 @@ opt_delete_branch() {
     if ui_confirm_action "Also delete on origin?"; then
         git push origin --delete "$b" 2>/dev/null || true
     fi
+    return 0
 }
 
 opt_backup() {
@@ -292,8 +293,14 @@ opt_undo_last() {
 opt_revert_commit() {
     _require_repo || return 1
     git log -n 15 --oneline
-    read -rp "Commit hash to revert (safe undo commit): " h
-    [[ -n "$h" ]] && git revert "$h"
+    local h=""
+    ui_prompt_input h "Commit hash to revert (safe undo commit)" || return 0
+    if [[ -n "$h" ]]; then
+        git revert "$h"
+    else
+        ui_info "Geen commit opgegeven; niets gewijzigd."
+    fi
+    return 0
 }
 
 opt_force_sync() {
@@ -325,21 +332,35 @@ opt_emergency_recovery() {
 
 opt_untrack() {
     _require_repo || return 1
-    read -rp "File path to untrack: " f
-    [[ -z "$f" ]] && return 0
-    git rm --cached "$f"
-    read -rp "Add '$f' to .gitignore? [y/N]: " ans
-    [[ "$ans" =~ ^[Yy]$ ]] && echo "$f" >> .gitignore && ui_ok "Added to .gitignore"
+    local f=""
+    ui_prompt_input f "File path to untrack" || return 0
+    [[ -z "$f" ]] && { ui_cancel_msg; return 0; }
+    git rm --cached "$f" || return 1
+    if ui_confirm_action "Add '$f' to .gitignore?"; then
+        echo "$f" >> .gitignore && ui_ok "Added to .gitignore"
+    fi
+    return 0
 }
 
 opt_config() {
     ui_section "GIT CONFIG"
-    echo "user.name  : $(git config user.name || echo unset)"
-    echo "user.email : $(git config user.email || echo unset)"
-    read -rp "Update user.name (leave blank to skip): " un
-    [[ -n "$un" ]] && git config user.name "$un"
-    read -rp "Update user.email (leave blank to skip): " ue
-    [[ -n "$ue" ]] && git config user.email "$ue"
+    echo "user.name  : $(git config user.name 2>/dev/null || echo unset)"
+    echo "user.email : $(git config user.email 2>/dev/null || echo unset)"
+    local changed=0 un="" ue=""
+    ui_prompt_input un "Update user.name (Enter to skip)" "" || return 0
+    if [[ -n "$un" ]]; then
+        git config user.name "$un" && changed=1
+    fi
+    ui_prompt_input ue "Update user.email (Enter to skip)" "" || return 0
+    if [[ -n "$ue" ]]; then
+        git config user.email "$ue" && changed=1
+    fi
+    if [[ "$changed" -eq 0 ]]; then
+        ui_info "Geen wijzigingen doorgevoerd; huidige configuratie behouden."
+    else
+        ui_ok "Git configuratie bijgewerkt."
+    fi
+    return 0
 }
 
 git_menu() {

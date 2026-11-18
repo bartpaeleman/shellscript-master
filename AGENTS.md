@@ -18,10 +18,14 @@
 
 ## Hub & CLI Conventies (`scripter`)
 - De centrale entrypoint is `./scripter` (voorheen `master`).
-- Directe module-aanroep gebruikt `+modulenaam` of `--modulenaam` (bijv. `./scripter +gitmaster status`, `./scripter +deps status`).
-- UI-elementen gebruiken `.core/ui.sh` en shell-persistentie verloopt via `./scripter --persist` (`.core/persist.sh`).
-- **Universele `0`-navigatie**: Elk menu gebruikt `0` als primaire terug-/afsluitoptie (`0) Terug` in submenus, `0) Afsluiten (Exit)` in het hoofdmenu), elke menu-prompt gebruikt `ui_read_menu_choice` zodat `Enter` standaard `0` is, en elke invoer-prompt accepteert `0` om te annuleren.
+- **Menu-Indeling & OS-Filtering**: Functionele hoofdcategorieën met strikte verberging van niet-ondersteunde modules en lege categorieën op het actieve OS (`OS_TYPE`, `os_is_macos`, `os_is_qnap`, `os_is_linux`), dynamische sectie-/itemnummering zonder gaten, en zichtbare platformtags (`[UNI]`, `[MAC]`, `[QNAP]`).
+- **CLI Switches & Shortcodes**: Nieuwe modules vereisen een unieke short-flag (`-x`), `+`-switches (`+naam`, `+kort`), argument-doorvoer naar de module en update van `scripter --help` en `README.md`.
+- **Universele `0`-navigatie**: Elk menu gebruikt `0` als primaire terug-/afsluitoptie (`0) Terug` in submenus, `0) Afsluiten (Exit)` in het hoofdmenu), elke menu-prompt gebruikt `ui_read_menu_choice` zodat `Enter` standaard `0` is (tekst-/pad-prompts met expliciete default uitgezonderd), en elke invoer-prompt accepteert `0` (of `q`) om te annuleren.
 - **Centrale Try/Catch (`ui_run_safe`)**: Externe commando's en kritieke acties in interactieve menu's worden gewikkeld in `ui_run_safe` (`.core/ui.sh`) zodat fouten netjes worden opgevangen zonder dat `scripter` crasht.
+- **QNAP / BusyBox Compatibiliteit & Persistentie**:
+  - Vermijd `read -e` of macOS-only commando's in `.core/` of QNAP-code (gebruik `ui_read_path` uit `.core/ui.sh`).
+  - Houd `COMMON_DEPS`, `MACOS_DEPS` en `QNAP_DEPS` strikt gescheiden in `.core/deps.sh` (geen harde fouten als `opkg` ontbreekt).
+  - QNAP-persistentie (`./scripter --persist` via `.core/persist.sh`) schrijft naar `/share/homes/<user>/.profile` en `/share/Public/.bash_aliases` (rekening houdend met vluchtige RAM-bestanden in `/root` en `/etc`), met automatische `.bak.<timestamp>` back-up vóór wijzigingen.
 
 ## Git Branch & Remote Sync Beleid
 - Controleer vóór het starten van nieuwe wijzigingen altijd of `shellscripts` en `origin/shellscripts` synchroon zijn (`git fetch origin && git status -sb`); zo niet, vraag eerst welke versie als bron geldt.

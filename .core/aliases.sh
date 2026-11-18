@@ -12,11 +12,15 @@ _alias_profile() {
             echo "${HOME}/.zshrc"
             ;;
         QNAP)
-            local u; u="$(whoami 2>/dev/null || echo admin)"
-            if [[ -d "/share/homes/${u}" ]]; then
-                echo "/share/homes/${u}/.profile"
+            if [[ -d "/share/Public" ]]; then
+                echo "/share/Public/.bash_aliases"
             else
-                echo "${HOME}/.profile"
+                local u; u="$(whoami 2>/dev/null || echo admin)"
+                if [[ -d "/share/homes/${u}" ]]; then
+                    echo "/share/homes/${u}/.profile"
+                else
+                    echo "${HOME}/.profile"
+                fi
             fi
             ;;
         *)
@@ -29,7 +33,11 @@ _alias_backup() {
     local f="$1"
     [[ ! -f "$f" ]] && return 0
     local bak="${f}.bak.$(date +%Y%m%d-%H%M%S)"
-    cp -p "$f" "$bak" 2>/dev/null && ui_ok "Backup: $bak"
+    if [[ -w "$(dirname "$f")" && -w "$f" ]]; then
+        cp -p "$f" "$bak" 2>/dev/null && ui_ok "Backup: $bak"
+    elif command -v sudo >/dev/null 2>&1 && [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+        sudo cp -p "$f" "$bak" 2>/dev/null && ui_ok "Backup (sudo): $bak"
+    fi
 }
 
 _alias_read_list() {
@@ -37,11 +45,9 @@ _alias_read_list() {
     ALIAS_NAMES=()
     ALIAS_CMDS=()
     [[ ! -f "$prof" ]] && return 0
-    local in_block=0 line name cmd
+    local line name cmd
     while IFS= read -r line || [[ -n "$line" ]]; do
-        [[ "$line" == "# >>> scripter-aliases >>>" ]] && { in_block=1; continue; }
-        [[ "$line" == "# <<< scripter-aliases <<<" ]] && { in_block=0; continue; }
-        if [[ "$in_block" -eq 1 && "$line" == alias\ * ]]; then
+        if [[ "$line" == alias\ * ]]; then
             name="${line#alias }"
             name="${name%%=*}"
             cmd="${line#*=}"
@@ -55,18 +61,15 @@ _alias_read_list() {
 
 _alias_write_list() {
     local prof="$1"
-    touch "$prof" 2>/dev/null || { ui_err "Cannot write to $prof"; return 1; }
     _alias_backup "$prof"
 
     local tmp; tmp="$(mktemp)"
-    if grep -q "# >>> scripter-aliases >>>" "$prof" 2>/dev/null; then
+    if [[ -f "$prof" ]]; then
         awk '
             /# >>> scripter-aliases >>>/ { skip=1; next }
             /# <<< scripter-aliases <<</ { skip=0; next }
-            !skip { print }
+            !skip && $0 !~ /^alias / { print }
         ' "$prof" > "$tmp"
-    else
-        cat "$prof" > "$tmp"
     fi
 
     {
@@ -78,8 +81,20 @@ _alias_write_list() {
         printf "# <<< scripter-aliases <<<\n"
     } >> "$tmp"
 
-    mv "$tmp" "$prof"
+    if [[ -w "$prof" ]] || [[ ! -e "$prof" && -w "$(dirname "$prof")" ]]; then
+        mv "$tmp" "$prof"
+    elif command -v sudo >/dev/null 2>&1 && [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+        sudo mv "$tmp" "$prof"
+    else
+        rm -f "$tmp"
+        ui_err "Cannot write to $prof (permission denied)."
+        return 1
+    fi
     ui_ok "Updated $prof (run 'source $prof' to activate)"
+
+    if os_is_qnap && [[ "$prof" == /root/* || "$prof" == /etc/* ]]; then
+        ui_warn "[VOLATILE RAM] Wijzigingen in $prof zijn actief voor deze sessie, maar kunnen bij een QNAP-reboot worden gereset."
+    fi
 }
 
 _alias_upsert() {
@@ -101,23 +116,24 @@ _alias_upsert() {
 }
 
 alias_presets_wizard() {
-    local prof; prof="$(_alias_profile)"
+    local prof="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
     ui_section "ALIAS PRESETS WIZARD ($OS_TYPE)"
     echo "  1) Webserver Presets (prd, dev, tst)"
     echo "  2) Python Venv Preset (pyvenv -> .dep/.venv)"
+    echo "  3) Directe Module-Aliassen (gitmaster, dockermaster, dbmaster, ...)"
     if os_is_macos; then
-        echo "  3) macOS Shortcuts (flushdns, showfiles, hidefiles, brewup)"
+        echo "  4) macOS Shortcuts (flushdns, showfiles, hidefiles, brewup)"
     fi
     echo "  0) Terug"
     local c=""
-    ui_prompt_input c "Select preset" || return 0
+    ui_read_menu_choice c "Select preset"
     case "$c" in
         1)
             local def_prd def_dev def_tst
             if os_is_qnap; then
-                def_prd="/share/Web"
-                def_dev="/share/Web/dev"
-                def_tst="/share/Web/tst"
+                def_prd="/share/Web/"
+                def_dev="/share/Web/DEV/"
+                def_tst="/share/Web/TEST/"
             else
                 def_prd="${HOME}/Sites"
                 def_dev="${HOME}/Sites/dev"
@@ -138,9 +154,49 @@ alias_presets_wizard() {
             _alias_upsert "$prof" "tst" "cd \"${p_tst}\" && ls -la"
             ;;
         2)
-            _alias_upsert "$prof" "pyvenv" "source \"${ROOT_DIR}/.dep/.venv/bin/activate\""
+            if os_is_qnap; then
+                local def_py; def_py="$(command -v python3 2>/dev/null || echo "/share/CACHEDEV1_DATA/.samba_python3/Python3/bin/python3")"
+                local py_path=""
+                read -e -p "QNAP python3 path [$def_py] (Enter=default, 0=cancel): " py_path
+                [[ "$py_path" == "0" ]] && { ui_cancel_msg; return 0; }
+                py_path="${py_path:-$def_py}"
+                local py_dir; py_dir="$(dirname "$py_path")"
+                _alias_upsert "$prof" "python3" "$py_path"
+                _alias_upsert "$prof" "pyvenv" "source \"${ROOT_DIR}/.dep/.venv/bin/activate\""
+                if ! grep -q "export PATH=\"${py_dir}:\$PATH\"" "$prof" 2>/dev/null; then
+                    printf "\nexport PATH=\"%s:\$PATH\"\n" "$py_dir" >> "$prof"
+                    ui_ok "Added export PATH=\"${py_dir}:\$PATH\" to $prof"
+                fi
+            else
+                _alias_upsert "$prof" "pyvenv" "source \"${ROOT_DIR}/.dep/.venv/bin/activate\""
+            fi
             ;;
         3)
+            _alias_upsert "$prof" "scripter" "${ROOT_DIR}/scripter"
+            _alias_upsert "$prof" "scripts" "cd \"${ROOT_DIR}\""
+            _alias_upsert "$prof" "gitmaster" "${ROOT_DIR}/scripter +gitmaster"
+            _alias_upsert "$prof" "dockermaster" "${ROOT_DIR}/scripter +containermaster"
+            _alias_upsert "$prof" "containermaster" "${ROOT_DIR}/scripter +containermaster"
+            _alias_upsert "$prof" "dbmaster" "${ROOT_DIR}/scripter +dbmaster"
+            _alias_upsert "$prof" "webmaster" "${ROOT_DIR}/scripter +webmaster"
+            _alias_upsert "$prof" "datamaster" "${ROOT_DIR}/scripter +datamaster"
+            _alias_upsert "$prof" "filemaster" "${ROOT_DIR}/scripter +filemaster"
+            _alias_upsert "$prof" "textmaster" "${ROOT_DIR}/scripter +textmaster"
+            if os_is_qnap; then
+                _alias_upsert "$prof" "qnapmaster" "${ROOT_DIR}/scripter +qnapmaster"
+                _alias_upsert "$prof" "sysmaster" "${ROOT_DIR}/scripter +qnapmaster"
+            elif os_is_macos; then
+                _alias_upsert "$prof" "macmaster" "${ROOT_DIR}/scripter +macmaster"
+                _alias_upsert "$prof" "networkmaster" "${ROOT_DIR}/scripter +networkmaster"
+                _alias_upsert "$prof" "cybermaster" "${ROOT_DIR}/scripter +cybermaster"
+                _alias_upsert "$prof" "intelmaster" "${ROOT_DIR}/scripter +intelmaster"
+                _alias_upsert "$prof" "audiomaster" "${ROOT_DIR}/scripter +audiomaster"
+                _alias_upsert "$prof" "videomaster" "${ROOT_DIR}/scripter +videomaster"
+                _alias_upsert "$prof" "imagemaster" "${ROOT_DIR}/scripter +imagemaster"
+                _alias_upsert "$prof" "karaokemaster" "${ROOT_DIR}/scripter +karaokemaster"
+            fi
+            ;;
+        4)
             if os_is_macos; then
                 _alias_upsert "$prof" "flushdns" "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
                 _alias_upsert "$prof" "showfiles" "defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"
@@ -148,12 +204,13 @@ alias_presets_wizard() {
                 _alias_upsert "$prof" "brewup" "brew update && brew upgrade && brew cleanup"
             fi
             ;;
+        0|q|Q) ui_cancel_msg ;;
         *) ui_cancel_msg ;;
     esac
 }
 
 alias_add_custom() {
-    local prof; prof="$(_alias_profile)"
+    local prof="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
     local name="" cmd=""
     ui_prompt_input name "Alias name" || return 0
     [[ -z "$name" ]] && { ui_cancel_msg; return 0; }
@@ -164,11 +221,19 @@ alias_add_custom() {
             cmd="cd \"${cmd}\" && ls -la"
         fi
     fi
+    if [[ "$name" == "python3" ]]; then
+        local py_dir; py_dir="$(dirname "$cmd")"
+        ui_info "Let op: een alias voor 'python3' werkt niet in subshells/scripts."
+        if ui_confirm_action "Ook 'export PATH=\"${py_dir}:\$PATH\"' toevoegen aan $prof?"; then
+            printf "\nexport PATH=\"%s:\$PATH\"\n" "$py_dir" >> "$prof"
+            ui_ok "Added export PATH=\"${py_dir}:\$PATH\" to $prof"
+        fi
+    fi
     _alias_upsert "$prof" "$name" "$cmd"
 }
 
 alias_edit_or_delete() {
-    local prof; prof="$(_alias_profile)"
+    local prof="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
     _alias_read_list "$prof"
     if [[ ${#ALIAS_NAMES[@]} -eq 0 ]]; then
         ui_info "Geen beheerde aliassen gevonden in $prof."
@@ -215,14 +280,64 @@ alias_edit_or_delete() {
     esac
 }
 
+alias_scan_all_qnap() {
+    ui_section "OVERZICHT ALLE QNAP PROFIELEN"
+    local u; u="$(whoami 2>/dev/null || echo admin)"
+    local p
+    for p in "/share/Public/.bash_aliases" "/share/homes/${u}/.profile" "/root/.profile" "/root/.bashrc" "/etc/profile" "/opt/etc/profile"; do
+        if [[ -f "$p" ]]; then
+            local cnt; cnt="$(grep -c '^alias ' "$p" 2>/dev/null || echo 0)"
+            printf "  %b[OK]%b %-32s (%s aliassen)\n" "${GREEN}" "${NC}" "$p" "$cnt"
+            grep '^alias ' "$p" 2>/dev/null | sed 's/^/      /'
+        else
+            printf "  %b[NIET GEVONDEN]%b %s\n" "${DIM}" "${NC}" "$p"
+        fi
+    done
+}
+
+alias_select_profile() {
+    local u; u="$(whoami 2>/dev/null || echo admin)"
+    local p_pub="/share/Public/.bash_aliases"
+    local p_home="/share/homes/${u}/.profile"
+    local p_opt="/opt/etc/profile"
+    local opt_tag="${GREEN}[PERSISTENT — Entware]${NC}"
+    [[ ! -f "$p_opt" ]] && opt_tag="${DIM}[NIET GEVONDEN]${NC}"
+
+    ui_clear_screen
+    ui_header "DOELBESTAND SELECTIE (QNAP)" "Actief: ${CYAN}${ACTIVE_ALIAS_PROFILE}${NC}"
+    printf "  %b 1)%b %-30s %b[PERSISTENT — Centraal Alias Bestand]%b\n" "${CYAN}${BOLD}" "${NC}" "$p_pub" "${GREEN}" "${NC}"
+    printf "  %b 2)%b %-30s %b[PERSISTENT]%b\n" "${CYAN}${BOLD}" "${NC}" "$p_home" "${GREEN}" "${NC}"
+    printf "  %b 3)%b %-30s %b[SESSION / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/root/.profile" "${YELLOW}" "${NC}"
+    printf "  %b 4)%b %-30s %b[SESSION / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/root/.bashrc" "${YELLOW}" "${NC}"
+    printf "  %b 5)%b %-30s %b[SYSTEM / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/etc/profile" "${YELLOW}" "${NC}"
+    printf "  %b 6)%b %-30s %b\n" "${CYAN}${BOLD}" "${NC}" "$p_opt" "$opt_tag"
+    printf "  %b 7)%b Scan alle bovenstaande bestanden tegelijk\n" "${CYAN}${BOLD}" "${NC}"
+    printf "  %b 0)%b Terug\n\n" "${CYAN}${BOLD}" "${NC}"
+
+    local s=""
+    ui_read_menu_choice s "Choice"
+    case "$s" in
+        1) ACTIVE_ALIAS_PROFILE="$p_pub" ;;
+        2) ACTIVE_ALIAS_PROFILE="$p_home" ;;
+        3) ACTIVE_ALIAS_PROFILE="/root/.profile" ;;
+        4) ACTIVE_ALIAS_PROFILE="/root/.bashrc" ;;
+        5) ACTIVE_ALIAS_PROFILE="/etc/profile" ;;
+        6) ACTIVE_ALIAS_PROFILE="$p_opt" ;;
+        7) alias_scan_all_qnap; ui_pause ;;
+        0|q|Q) return 0 ;;
+        *) ui_warn "Invalid choice."; ui_pause ;;
+    esac
+}
+
 alias_manager_menu() {
-    local prof; prof="$(_alias_profile)"
+    ACTIVE_ALIAS_PROFILE="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
     while true; do
+        local prof="$ACTIVE_ALIAS_PROFILE"
         ui_clear_screen
         ui_header "ALIAS MANAGER ($OS_TYPE)" "Profile: ${CYAN}${prof}${NC}"
         _alias_read_list "$prof"
         if [[ ${#ALIAS_NAMES[@]} -gt 0 ]]; then
-            ui_section "ACTIEVE SCRIPTER-ALIASSEN"
+            ui_section "ACTIEVE ALIASSEN"
             local i
             for ((i=0; i<${#ALIAS_NAMES[@]}; i++)); do
                 printf "  %b%2d)%b %-14s -> %s\n" "${DIM}" "$((i+1))" "${NC}" "${ALIAS_NAMES[$i]}" "${ALIAS_CMDS[$i]}"
@@ -232,6 +347,9 @@ alias_manager_menu() {
         ui_item "1" "Nieuwe Alias Toevoegen"  "Met Tab pad-autocomplete"
         ui_item "2" "Presets Wizard"          "Webserver PRD/DEV/TST & pyvenv"
         ui_item "3" "Wijzigen / Verwijderen"  "Op nummer (met .bak backup)"
+        if os_is_qnap; then
+            ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle QNAP files"
+        fi
         ui_item "0" "Terug"                   ""
         printf "\n"
         local c=""
@@ -240,6 +358,7 @@ alias_manager_menu() {
             1) ui_run_safe "Nieuwe Alias" alias_add_custom ;;
             2) ui_run_safe "Presets Wizard" alias_presets_wizard ;;
             3) ui_run_safe "Alias Wijzigen/Verwijderen" alias_edit_or_delete ;;
+            4) os_is_qnap && alias_select_profile ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac

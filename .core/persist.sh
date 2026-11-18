@@ -63,6 +63,13 @@ persist_system() {
                 applied=1
             fi
             _upsert_rc_block "${HOME}/.profile" && applied=1
+            local q_prof
+            for q_prof in "/share/homes/$(whoami 2>/dev/null || echo admin)/.profile" "/root/.profile"; do
+                if [[ -f "$q_prof" && -w "$q_prof" ]] && ! grep -q "# >>> scripter-hook >>>" "$q_prof" 2>/dev/null; then
+                    printf "\n# >>> scripter-hook >>>\n[ -f /share/Public/.bash_aliases ] && . /share/Public/.bash_aliases\n# <<< scripter-hook <<<\n" >> "$q_prof"
+                    ui_ok "Added scripter-hook to $q_prof"
+                fi
+            done
             if [[ "$applied" -eq 0 ]]; then
                 ui_warn "Could not write to Entware (/opt/etc/profile). Check permissions."
             else

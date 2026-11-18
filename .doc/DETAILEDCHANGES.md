@@ -83,3 +83,25 @@
 ### Default `Enter` = `0` in Menus & Standalone Cleanup
 - Added `ui_read_menu_choice` in `.core/ui.sh` (`Choice [0]: `) so empty `Enter` input defaults to `0` across `scripter`, `.core/aliases.sh`, `qnapmaster.sh`, and all 7 `modules/common/*` modules.
 - Audited and removed legacy `macscripts/` and `unixscripts/` reference directories after passing full quarantine smoke-tests (`shellscript-master` runs 100% standalone).
+
+### QNAP Target Profile Selector & Legacy Alias Support (`.core/aliases.sh`)
+- Added `alias_select_profile` and `alias_scan_all_qnap` for QNAP (`/share/homes/<user>/.profile`, `/root/.profile`, `/root/.bashrc`, `/etc/profile`, `/opt/etc/profile`).
+- Updated `_alias_read_list` to include standalone legacy `alias ` lines and `_alias_write_list` to handle `sudo` + `.bak` backups + `[VOLATILE RAM]` warnings.
+
+### QNAP Persistence Scanner Alignment (`modules/qnap/qnapmaster.sh`)
+- Aligned `qnap_persistence_scan` and `_qnap_file_actions` with `Enter = 0` (`ui_read_menu_choice`) and added `scriptmaster` / `# >>> scripter >>>` cleanup support.
+
+### QNAP `/share/Public/.bash_aliases`, Direct Module Aliases & Legacy Migration
+- Added `/share/Public/.bash_aliases` `[PERSISTENT — Centraal Alias Bestand]` to `.core/aliases.sh`, `qnapmaster.sh`, and `# >>> scripter-hook >>>` in `.core/persist.sh`.
+- Added `Directe Module-Aliassen` preset (`gitmaster`, `dockermaster`, `dbmaster`, etc.) for QNAP and macOS, updated QNAP Webserver defaults to `/share/Web/`, `/share/Web/DEV/`, `/share/Web/TEST/`, and added `alias_migrate_unixscripts` to migrate legacy `/share/Public/unixscripts` aliases while preserving custom Python/Web rules.
+
+### `AGENTS.md` Architecture & QNAP Standards Update
+- Documented functional menu grouping, dynamic numbering, shortcodes (`-x`), `Enter = 0` (`ui_read_menu_choice`), `ui_run_safe`, and QNAP/BusyBox compatibility & persistence rules in `AGENTS.md`.
+
+### QNAP Python 3 Auto-Detection & Alias Preset (`.core/os_detect.sh`, `.core/aliases.sh`)
+- Added `os_detect_qnap_python()` in `.core/os_detect.sh` to automatically prepend `.samba_python3`, QPKG Python3, or `/opt/bin` to `PATH` on QNAP.
+- Updated `Python Venv Preset` and `alias_add_custom` in `.core/aliases.sh` to configure `export PATH` alongside `alias python3` on QNAP.
+
+### `gitmaster` & `ui_run_safe` Cross-Platform Hardening
+- Updated `ui_run_safe` in `.core/ui.sh` to capture and display `stderr` details on command failure.
+- Fixed trailing conditional one-liners in `modules/common/git/gitmaster.sh` (`opt_config`, `opt_revert_commit`, `opt_untrack`, `opt_delete_branch`) so skipping optional inputs returns `0` cleanly.

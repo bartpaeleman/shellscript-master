@@ -20,6 +20,7 @@ detect_os() {
 
     if [[ "$OS_TYPE" == "QNAP" ]]; then
         export PATH="/opt/bin:/opt/sbin:$PATH"
+        os_detect_qnap_python
     fi
 
     if command -v brew >/dev/null 2>&1; then
@@ -49,6 +50,23 @@ detect_os() {
 os_is_macos() { [[ "${OS_TYPE:-}" == "macOS" ]]; }
 os_is_qnap()  { [[ "${OS_TYPE:-}" == "QNAP" ]]; }
 os_is_linux() { [[ "${OS_TYPE:-}" == "Linux" ]]; }
+
+os_detect_qnap_python() {
+    command -v python3 >/dev/null 2>&1 && return 0
+    local cand
+    for cand in \
+        "/share/CACHEDEV1_DATA/.samba_python3/Python3/bin" \
+        "/share/CACHEDEV1_DATA/.qpkg/Python3/python3/bin" \
+        "/opt/bin" \
+        /share/*/.samba_python3/Python3/bin \
+        /share/*/.qpkg/Python3/*/bin; do
+        if [[ -x "${cand}/python3" ]]; then
+            export PATH="${cand}:$PATH"
+            return 0
+        fi
+    done
+    return 1
+}
 
 os_sed_inplace() {
     local expr="$1"
