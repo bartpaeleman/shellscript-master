@@ -67,3 +67,7 @@
 - Added conflict-free shortcodes (`-g`, `-c`, `-b`, `-w`, `-m`, `-q`, `-f`, `-a`, `-t`, `-e`, `-n`, `-y`, `-i`, `-u`, `-v`, `-p`, `-k`) and `+switches` to `scripter` and `show_help()`.
 - Added short subcommand aliases in `gitmaster.sh` (`st`, `df`, `sw`, `ci`, `sq`, `pr`, `bak`, `rst`) and `containermaster.sh` (`ls`, `lg`, `in`, `rs`, `sh`, `cleanup`).
 - Rewrote `README.md` as a complete user manual for `shellscript-master`.
+
+### QNAP Persistence & Profile Scanner / Editor (`modules/qnap/qnapmaster.sh`)
+- Added `qnap_persistence_scan` (`scripter -q persistence`) scanning `[PERSISTENT]` (`/share/homes/*/.profile`, `/opt/etc/profile`, `/opt/bin/scripter`, `/etc/config/autorun.sh`) and `[SESSION]` (`/root/.*`, `/etc/.*`, `/usr/local/bin/scripter`, `/usr/bin/scripter`) locations.
+- Added safe per-file actions: timestamped `.bak` backup, `sudo`-aware editing (`nano`/`vim`/`vi`), rule preview, and `# >>> scripter-hub >>>` block removal.
