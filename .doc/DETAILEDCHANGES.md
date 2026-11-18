@@ -50,3 +50,8 @@
 - Grouped `scripter` menu and `--help` functionally (`DEVELOPMENT & OPS`, `SYSTEEMBEHEER`, `BESTANDS- & DATABEHEER`, `NETWERK & CYBERSECURITY`, `MEDIA & MULTIMEDIA`, `UTILITIES & ONDERHOUD`) with `[UNI]`, `[MAC]`, `[QNAP]` labels.
 - Added dynamic category (`cat_idx`) and sequential item (`item_idx`) numbering so empty categories are omitted without gaps.
 - Updated `.core/os_detect.sh` to respect `OS_TYPE` environment overrides for simulation/testing.
+
+### Universal `0` Navigation & `ui_run_safe` Error Handling
+- **`.core/ui.sh`**: Added `ui_run_safe "<desc>" <cmd...>` try/catch wrapper and updated `ui_pause()` to `Druk op [Enter] of typ '0' om terug te keren...`.
+- **`scripter`, `qnapmaster.sh`, and all 7 `modules/common/*` modules**: Standardized `0) Terug` / `0) Afsluiten (Exit)` and wrapped interactive actions in `ui_run_safe`.
+- **`AGENTS.md`**: Added `0` navigation and `ui_run_safe` as permanent coding standards.

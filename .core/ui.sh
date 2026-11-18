@@ -24,7 +24,28 @@ ui_clear_screen() {
 
 ui_pause() {
     printf "\n"
-    read -rp "Press [Enter] to continue..." _
+    read -rp "Druk op [Enter] of typ '0' om terug te keren... " _
+}
+
+ui_run_safe() {
+    local __desc="$1"
+    shift
+    local __rc=0
+    local __had_errexit=0
+    case "$-" in *e*) __had_errexit=1; set +e ;; esac
+    "$@"
+    __rc=$?
+    [[ "$__had_errexit" -eq 1 ]] && set -e
+
+    if [[ "$__rc" -ne 0 ]]; then
+        printf "\n%b===============================================================%b\n" "${RED}${BOLD}" "${NC}"
+        printf "%b[FOUT] Actie mislukt: %s (Exit code: %s)%b\n" "${RED}${BOLD}" "$__desc" "$__rc" "${NC}"
+        printf "%b===============================================================%b\n" "${RED}${BOLD}" "${NC}"
+        read -rp "Druk op [Enter] of typ '0' om terug te keren naar het vorige scherm... " _
+    else
+        ui_pause
+    fi
+    return 0
 }
 
 ui_divider() {

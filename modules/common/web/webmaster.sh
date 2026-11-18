@@ -68,13 +68,13 @@ web_menu() {
         ui_item "1" "Create Web Project" "Scaffold assets, includes, config, index.php"
         ui_item "2" "Generate README.md" "Via generate_readme.py"
         ui_item "3" "Local HTTP Server"  "Serve current directory via python3"
-        ui_item "0" "Back"               ""
+        ui_item "0" "Terug"              ""
         printf "\n"
         read -rp "Choice: " c
         case "$c" in
-            1) opt_scaffold; ui_pause ;;
-            2) opt_readme; ui_pause ;;
-            3) read -rp "Port [8000]: " p; opt_serve "${p:-8000}"; ui_pause ;;
+            1) ui_run_safe "Create Web Project" opt_scaffold ;;
+            2) ui_run_safe "Generate README.md" opt_readme ;;
+            3) read -rp "Port [8000]: " p; ui_run_safe "Local HTTP Server" opt_serve "${p:-8000}" ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac

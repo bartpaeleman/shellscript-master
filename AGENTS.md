@@ -20,6 +20,8 @@
 - De centrale entrypoint is `./scripter` (voorheen `master`).
 - Directe module-aanroep gebruikt `+modulenaam` of `--modulenaam` (bijv. `./scripter +gitmaster status`, `./scripter +deps status`).
 - UI-elementen gebruiken `.core/ui.sh` en shell-persistentie verloopt via `./scripter --persist` (`.core/persist.sh`).
+- **Universele `0`-navigatie**: Elk menu gebruikt `0` als primaire terug-/afsluitoptie (`0) Terug` in submenus, `0) Afsluiten (Exit)` in het hoofdmenu), en elke invoer-prompt accepteert `0` om te annuleren.
+- **Centrale Try/Catch (`ui_run_safe`)**: Externe commando's en kritieke acties in interactieve menu's worden gewikkeld in `ui_run_safe` (`.core/ui.sh`) zodat fouten netjes worden opgevangen zonder dat `scripter` crasht.
 
 ## Git Branch & Remote Sync Beleid
 - Controleer vóór het starten van nieuwe wijzigingen altijd of `shellscripts` en `origin/shellscripts` synchroon zijn (`git fetch origin && git status -sb`); zo niet, vraag eerst welke versie als bron geldt.

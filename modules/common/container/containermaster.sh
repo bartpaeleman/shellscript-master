@@ -217,20 +217,20 @@ container_menu() {
         ui_item "8"  "Create New Stack"  "Compose file or manual run"
         ui_item "9"  "Remove Container"  "Delete (with --force option)"
         ui_item "10" "System Cleanup"    "Prune containers, images, volumes"
-        ui_item "0"  "Back"              ""
+        ui_item "0"  "Terug"             ""
         printf "\n"
         read -rp "Choice: " c
         case "$c" in
-            1)  opt_list; ui_pause ;;
-            2)  opt_logs; ui_pause ;;
-            3)  opt_inspect; ui_pause ;;
-            4)  opt_start; ui_pause ;;
-            5)  opt_stop; ui_pause ;;
-            6)  opt_restart; ui_pause ;;
-            7)  opt_shell; ui_pause ;;
-            8)  opt_create; ui_pause ;;
-            9)  opt_rm; ui_pause ;;
-            10) opt_prune; ui_pause ;;
+            1)  ui_run_safe "List Containers" opt_list ;;
+            2)  ui_run_safe "View Live Logs" opt_logs ;;
+            3)  ui_run_safe "Inspect Container" opt_inspect ;;
+            4)  ui_run_safe "Start Container" opt_start ;;
+            5)  ui_run_safe "Stop Container" opt_stop ;;
+            6)  ui_run_safe "Restart Container" opt_restart ;;
+            7)  ui_run_safe "Shell Access" opt_shell ;;
+            8)  ui_run_safe "Create New Stack" opt_create ;;
+            9)  ui_run_safe "Remove Container" opt_rm ;;
+            10) ui_run_safe "System Cleanup" opt_prune ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac

@@ -83,15 +83,15 @@ text_menu() {
         ui_item "3" "Compare Files"    "Unified diff"
         ui_item "4" "Merge Files"      "Combine multiple files"
         ui_item "5" "Case Conversion"  "UPPERCASE / lowercase"
-        ui_item "0" "Back"             ""
+        ui_item "0" "Terug"            ""
         printf "\n"
         read -rp "Choice: " c
         case "$c" in
-            1) opt_stats; ui_pause ;;
-            2) opt_replace; ui_pause ;;
-            3) opt_diff; ui_pause ;;
-            4) opt_merge; ui_pause ;;
-            5) opt_case; ui_pause ;;
+            1) ui_run_safe "Text Statistics" opt_stats ;;
+            2) ui_run_safe "Search & Replace" opt_replace ;;
+            3) ui_run_safe "Compare Files" opt_diff ;;
+            4) ui_run_safe "Merge Files" opt_merge ;;
+            5) ui_run_safe "Case Conversion" opt_case ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac

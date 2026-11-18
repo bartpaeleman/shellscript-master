@@ -141,15 +141,15 @@ data_menu() {
         ui_item "3" "Convert File Format"  "CSV<->JSON, XML->JSON, YAML->JSON"
         ui_item "4" "Normalize CSV"        "Strip whitespace & empty rows"
         ui_item "5" "Dependency Check"     "Check pandas & pyyaml"
-        ui_item "0" "Back"                 ""
+        ui_item "0" "Terug"                ""
         printf "\n"
         read -rp "Choice: " c
         case "$c" in
-            1) opt_table; ui_pause ;;
-            2) opt_delimiter; ui_pause ;;
-            3) opt_convert; ui_pause ;;
-            4) opt_normalize; ui_pause ;;
-            5) opt_deps; ui_pause ;;
+            1) ui_run_safe "View CSV as Table" opt_table ;;
+            2) ui_run_safe "Convert Delimiter" opt_delimiter ;;
+            3) ui_run_safe "Convert File Format" opt_convert ;;
+            4) ui_run_safe "Normalize CSV" opt_normalize ;;
+            5) ui_run_safe "Dependency Check" opt_deps ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac

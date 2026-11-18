@@ -72,13 +72,13 @@ db_menu() {
         ui_item "1" "Backup Database"  "Compressed .sql.gz via mysqldump"
         ui_item "2" "Analyze Database" "Table sizes & row counts (db_stats.py)"
         ui_item "3" "Check DB Clients" "sqlite3, psql, mysql, mongosh, redis-cli"
-        ui_item "0" "Back"             ""
+        ui_item "0" "Terug"            ""
         printf "\n"
         read -rp "Choice: " c
         case "$c" in
-            1) opt_backup; ui_pause ;;
-            2) opt_analyze; ui_pause ;;
-            3) opt_check; ui_pause ;;
+            1) ui_run_safe "Backup Database" opt_backup ;;
+            2) ui_run_safe "Analyze Database" opt_analyze ;;
+            3) ui_run_safe "Check DB Clients" opt_check ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac

@@ -182,19 +182,19 @@ file_menu() {
         ui_item "7" "CSV Export"         "Directory listing to CSV"
         ui_item "8" "Interactive Finder" "fzf file/dir browser"
         ui_item "9" "Largest Files"      "Top 15 largest files"
-        ui_item "0" "Back"               ""
+        ui_item "0" "Terug"              ""
         printf "\n"
         read -rp "Choice: " c
         case "$c" in
-            1) opt_rename; ui_pause ;;
-            2) opt_mkdirs; ui_pause ;;
-            3) opt_archive; ui_pause ;;
-            4) opt_cleanup; ui_pause ;;
-            5) opt_compare; ui_pause ;;
-            6) opt_sync; ui_pause ;;
-            7) opt_csv; ui_pause ;;
-            8) opt_fzf; ui_pause ;;
-            9) opt_large; ui_pause ;;
+            1) ui_run_safe "Bulk Rename" opt_rename ;;
+            2) ui_run_safe "Create Dir Tree" opt_mkdirs ;;
+            3) ui_run_safe "Archive Directory" opt_archive ;;
+            4) ui_run_safe "Cleanup" opt_cleanup ;;
+            5) ui_run_safe "Compare" opt_compare ;;
+            6) ui_run_safe "Folder Sync" opt_sync ;;
+            7) ui_run_safe "CSV Export" opt_csv ;;
+            8) ui_run_safe "Interactive Finder" opt_fzf ;;
+            9) ui_run_safe "Largest Files" opt_large ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac

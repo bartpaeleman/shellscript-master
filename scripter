@@ -242,7 +242,7 @@ interactive_menu() {
         ui_item "P" "Make Persistent"   "Configure shell alias/PATH for $OS_TYPE"
         ui_item "D" "Dependency Center" "Check, install or update tools"
         ui_item "H" "Help & CLI"        "Show available +switches"
-        ui_item "0" "Exit"              ""
+        ui_item "0" "Afsluiten (Exit)"  ""
 
         printf "\n"
         read -rp "Select option: " choice
@@ -261,9 +261,14 @@ interactive_menu() {
             0|q|Q|exit) exit 0 ;;
             *)
                 if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 && "$choice" -le ${#MENU_TARGETS[@]} ]]; then
-                    route_module "${MENU_TARGETS[$((choice-1))]}"
+                    local target_mod="${MENU_TARGETS[$((choice-1))]}"
+                    if ! route_module "$target_mod"; then
+                        ui_err "Module '$target_mod' eindigde met een fout."
+                        ui_pause
+                    fi
                 else
                     ui_warn "Invalid option: $choice"
+                    ui_pause
                 fi
                 ;;
         esac
