@@ -109,3 +109,6 @@
 ### `macmaster` & macOS Alias Manager Parity
 - Upgraded `modules/macos/macsystem/macmanager.sh` to `.core/ui.sh` (`ui_clear_screen`, `ui_read_menu_choice` with `Enter = 0`, `ui_run_safe`, `0) Terug` instead of `X) Exit`), plus `7) Alias Manager` and `--help`.
 - Added macOS Target Profile Selector (`~/.zshrc`, `~/.zprofile`, `~/.bash_profile`, `~/.bashrc`, scan all) and `alias_cleanup_legacy_macos` in `.core/aliases.sh`, plus `ui_read_path` in `.core/ui.sh`.
+
+### `gitmaster` Local & Remote Branch Checkout (`modules/common/git/gitmaster.sh`)
+- Updated `opt_checkout` to run `git fetch --all --prune`, deduplicate local & `origin/*` branches with `[LOKAAL]` / `[REMOTE - origin]` tags, and support `Enter = 0` (`ui_read_menu_choice`).
