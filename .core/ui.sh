@@ -38,6 +38,20 @@ ui_read_menu_choice() {
     printf -v "$__var_name" '%s' "$__val"
 }
 
+ui_read_path() {
+    local __var_name="$1"
+    local __prompt="$2"
+    local __default="${3:-}"
+    local __val=""
+    if read -e -p "${__prompt}: " __val 2>/dev/null; then
+        :
+    else
+        read -rp "${__prompt}: " __val
+    fi
+    [[ -z "$__val" && -n "$__default" ]] && __val="$__default"
+    printf -v "$__var_name" '%s' "$__val"
+}
+
 ui_run_safe() {
     local __desc="$1"
     shift

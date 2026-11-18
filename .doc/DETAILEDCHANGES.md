@@ -105,3 +105,7 @@
 ### `gitmaster` & `ui_run_safe` Cross-Platform Hardening
 - Updated `ui_run_safe` in `.core/ui.sh` to capture and display `stderr` details on command failure.
 - Fixed trailing conditional one-liners in `modules/common/git/gitmaster.sh` (`opt_config`, `opt_revert_commit`, `opt_untrack`, `opt_delete_branch`) so skipping optional inputs returns `0` cleanly.
+
+### `macmaster` & macOS Alias Manager Parity
+- Upgraded `modules/macos/macsystem/macmanager.sh` to `.core/ui.sh` (`ui_clear_screen`, `ui_read_menu_choice` with `Enter = 0`, `ui_run_safe`, `0) Terug` instead of `X) Exit`), plus `7) Alias Manager` and `--help`.
+- Added macOS Target Profile Selector (`~/.zshrc`, `~/.zprofile`, `~/.bash_profile`, `~/.bashrc`, scan all) and `alias_cleanup_legacy_macos` in `.core/aliases.sh`, plus `ui_read_path` in `.core/ui.sh`.
