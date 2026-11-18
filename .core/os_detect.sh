@@ -39,4 +39,33 @@ detect_os() {
     export OS_TYPE ARCH PKG_MGR IS_ROOT
 }
 
+# --- OS-ABSTRACTION WRAPPERS (macOS Bash 3.2 + GNU/Linux/QNAP portable) ---
+os_is_macos() { [[ "${OS_TYPE:-}" == "macOS" ]]; }
+os_is_qnap()  { [[ "${OS_TYPE:-}" == "QNAP" ]]; }
+os_is_linux() { [[ "${OS_TYPE:-}" == "Linux" ]]; }
+
+os_sed_inplace() {
+    local expr="$1"
+    local file="$2"
+    if os_is_macos; then
+        sed -i '' "$expr" "$file"
+    else
+        sed -i "$expr" "$file"
+    fi
+}
+
+os_readlink_f() {
+    local target="$1"
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -c 'import os,sys; print(os.path.realpath(sys.argv[1]))' "$target"
+    elif readlink -f "$target" >/dev/null 2>&1; then
+        readlink -f "$target"
+    else
+        local dir base
+        dir="$(cd "$(dirname "$target")" 2>/dev/null && pwd -P)"
+        base="$(basename "$target")"
+        echo "${dir}/${base}"
+    fi
+}
+
 detect_os

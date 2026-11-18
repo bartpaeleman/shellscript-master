@@ -20,3 +20,27 @@
 - De centrale entrypoint is `./scripter` (voorheen `master`).
 - Directe module-aanroep gebruikt `+modulenaam` of `--modulenaam` (bijv. `./scripter +gitmaster status`, `./scripter +deps status`).
 - UI-elementen gebruiken `.core/ui.sh` en shell-persistentie verloopt via `./scripter --persist` (`.core/persist.sh`).
+
+## Git Branch & Remote Sync Beleid
+- Controleer vóór het starten van nieuwe wijzigingen altijd of `shellscripts` en `origin/shellscripts` synchroon zijn (`git fetch origin && git status -sb`); zo niet, vraag eerst welke versie als bron geldt.
+- Commit en push elke afgeronde wijziging methodisch en atomisch naar `origin/shellscripts`.
+- `./macscripts` en `./unixscripts` blijven strikt in `.gitignore` als lokale referentie zonder symlinks of pad-afhankelijkheden.
+
+## Gelaagde Documentatie & Release Beheer
+- Houd `CHANGELOG.md` uiterst compact (alleen actieve major releases en hoofdmijlpalen).
+- Houd alle gedetailleerde wijzigingslogs en technische release-aantekeningen bij in `.doc/DETAILEDCHANGES.md`.
+- **Release-vergrendeling**: Verhoog een versienummer in `CHANGELOG.md` en `.doc/DETAILEDCHANGES.md` nooit zelfstandig na kleine fixes. Vraag bij grote mijlpalen eerst expliciet om bevestiging; pas na goedkeuring squashen, versienummer bijwerken en Git-tag plaatsen.
+
+## Automatische Eerste-Start & Pre-Check
+- `scripter` voert bij elke opstart een snelle, stille pre-check uit:
+  - Herstelt indien nodig `chmod +x` op `scripter`, `.core/*.sh` en `modules/**/*.sh` / `*.py`.
+  - Controleert of `.config/.env` (vanuit `.config/.env.example`) en `.dep/.venv` aanwezig zijn en initialiseert ontbrekende basisstructuren.
+
+## Omgevings-Pariteit & Anti-Regressie Standaarden
+- Verbied hardcoded paden (`/Users/...`, `/share/...`) en GNU-only CLI-flags (`sed -i`, `readlink -f`, `grep -P`) in gedeelde code; gebruik de OS-abstractie wrappers uit `.core/os_detect.sh`.
+- Houd rekening met macOS Bash 3.2 vs. moderne Bash/Zsh: gebruik portable shell-constructies of expliciete interpreter-selectie.
+
+## Verplichte Pre-Commit Verificatie
+- Voer vóór elke commit een geautomatiseerde controle uit op alle gewijzigde bestanden:
+  - Syntax-validatie (`bash -n` voor shellscripts, `python3 -m py_compile` voor Python-scripts, en `shellcheck` indien geïnstalleerd).
+  - Smoke-test (`./scripter +<module> --help`) om te verifiëren dat de module foutloos opstart.

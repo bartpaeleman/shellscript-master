@@ -9,6 +9,25 @@ source "$ROOT_DIR/.core/ui.sh"
 source "$ROOT_DIR/.core/deps.sh"
 source "$ROOT_DIR/.core/persist.sh"
 
+_startup_precheck() {
+    # Silently ensure executable permissions on core & module scripts
+    [[ -x "$ROOT_DIR/scripter" ]] || chmod +x "$ROOT_DIR/scripter" 2>/dev/null || true
+    chmod +x "$ROOT_DIR/.core/"*.sh 2>/dev/null || true
+    if [[ -d "$ROOT_DIR/modules" ]]; then
+        find "$ROOT_DIR/modules" -type f \( -name "*.sh" -o -name "*.py" \) ! -perm -u+x -exec chmod +x {} + 2>/dev/null || true
+    fi
+    # Initialize .config/.env from .config/.env.example if missing
+    mkdir -p "$ROOT_DIR/.config" "$ROOT_DIR/.dep" 2>/dev/null || true
+    if [[ ! -f "$ROOT_DIR/.config/.env" && -f "$ROOT_DIR/.config/.env.example" ]]; then
+        cp "$ROOT_DIR/.config/.env.example" "$ROOT_DIR/.config/.env" 2>/dev/null || true
+    fi
+    # Silently initialize .dep/.venv if python3 is available and venv is missing
+    if [[ ! -d "$ROOT_DIR/.dep/.venv" ]] && command -v python3 >/dev/null 2>&1; then
+        python3 -m venv "$ROOT_DIR/.dep/.venv" >/dev/null 2>&1 || true
+    fi
+}
+_startup_precheck
+
 _os_display() {
     case "$OS_TYPE" in
         macOS) echo "macOS (Darwin)" ;;
