@@ -4,6 +4,7 @@
 CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$CORE_DIR/.." && pwd)"
 [[ -z "${OS_TYPE:-}" ]] && source "$CORE_DIR/os_detect.sh"
+[[ -z "${UI_LINE:-}" ]] && source "$CORE_DIR/ui.sh"
 
 # Format: "cmd:brew_pkg:opkg_pkg:apt_pkg:description"
 COMMON_DEPS=(
@@ -198,19 +199,21 @@ deps_update_all() {
 
 deps_menu() {
     while true; do
-        echo ""
-        echo "=== Dependency & Update Center ($OS_TYPE) ==="
-        echo "1) Check status of binaries & Python packages"
-        echo "2) Install missing dependencies"
-        echo "3) Update all tools & packages"
-        echo "0) Terug"
-        read -rp "Choice: " choice
+        ui_clear_screen
+        ui_header "DEPENDENCY & UPDATE CENTER" "System : ${CYAN}${OS_TYPE}${NC} | PkgMgr: ${CYAN}${PKG_MGR}${NC}"
+        ui_item "1" "Check Status"         "Binaries & Python packages"
+        ui_item "2" "Install Missing"      "Installeer ontbrekende tools"
+        ui_item "3" "Update All"           "Update tools & packages"
+        ui_item "0" "Terug"                ""
+        printf "\n"
+        local choice=""
+        ui_read_menu_choice choice "Choice"
         case "$choice" in
-            1) deps_status ;;
-            2) deps_install_missing ;;
-            3) deps_update_all ;;
+            1) ui_run_safe "Check Dependencies" deps_status ;;
+            2) ui_run_safe "Install Dependencies" deps_install_missing ;;
+            3) ui_run_safe "Update Dependencies" deps_update_all ;;
             0|q|Q) break ;;
-            *) echo "Invalid choice." ;;
+            *) ui_warn "Invalid choice."; ui_pause ;;
         esac
     done
 }
