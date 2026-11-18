@@ -186,6 +186,7 @@ alias_presets_wizard() {
                 _alias_upsert "$prof" "qnapmaster" "${ROOT_DIR}/scripter +qnapmaster"
                 _alias_upsert "$prof" "sysmaster" "${ROOT_DIR}/scripter +qnapmaster"
             elif os_is_macos; then
+                _alias_upsert "$prof" "ebooks" "${ROOT_DIR}/scripter +rename_ebooks"
                 _alias_upsert "$prof" "macmaster" "${ROOT_DIR}/scripter +macmaster"
                 _alias_upsert "$prof" "networkmaster" "${ROOT_DIR}/scripter +networkmaster"
                 _alias_upsert "$prof" "cybermaster" "${ROOT_DIR}/scripter +cybermaster"
@@ -329,6 +330,62 @@ alias_select_profile() {
     esac
 }
 
+alias_scan_all_macos() {
+    ui_section "OVERZICHT ALLE macOS PROFIELEN"
+    local p
+    for p in "${HOME}/.zshrc" "${HOME}/.zprofile" "${HOME}/.bash_profile" "${HOME}/.bashrc"; do
+        if [[ -f "$p" ]]; then
+            local cnt; cnt="$(grep -c '^alias ' "$p" 2>/dev/null || echo 0)"
+            printf "  %b[OK]%b %-32s (%s aliassen)\n" "${GREEN}" "${NC}" "$p" "$cnt"
+            grep '^alias ' "$p" 2>/dev/null | sed 's/^/      /'
+        else
+            printf "  %b[NIET GEVONDEN]%b %s\n" "${DIM}" "${NC}" "$p"
+        fi
+    done
+}
+
+alias_select_profile_macos() {
+    ui_clear_screen
+    ui_header "DOELBESTAND SELECTIE (macOS)" "Actief: ${CYAN}${ACTIVE_ALIAS_PROFILE}${NC}"
+    printf "  %b 1)%b %-28s %b[PERSISTENT — Standaard macOS Zsh]%b\n" "${CYAN}${BOLD}" "${NC}" "${HOME}/.zshrc" "${GREEN}" "${NC}"
+    printf "  %b 2)%b %-28s %b[PERSISTENT — Zsh Login Profile]%b\n" "${CYAN}${BOLD}" "${NC}" "${HOME}/.zprofile" "${GREEN}" "${NC}"
+    printf "  %b 3)%b %-28s %b[PERSISTENT — Bash Login Profile]%b\n" "${CYAN}${BOLD}" "${NC}" "${HOME}/.bash_profile" "${GREEN}" "${NC}"
+    printf "  %b 4)%b %-28s %b[PERSISTENT — Bash Interactive]%b\n" "${CYAN}${BOLD}" "${NC}" "${HOME}/.bashrc" "${GREEN}" "${NC}"
+    printf "  %b 5)%b Scan alle bovenstaande bestanden tegelijk\n" "${CYAN}${BOLD}" "${NC}"
+    printf "  %b 0)%b Terug\n\n" "${CYAN}${BOLD}" "${NC}"
+
+    local s=""
+    ui_read_menu_choice s "Choice"
+    case "$s" in
+        1) ACTIVE_ALIAS_PROFILE="${HOME}/.zshrc" ;;
+        2) ACTIVE_ALIAS_PROFILE="${HOME}/.zprofile" ;;
+        3) ACTIVE_ALIAS_PROFILE="${HOME}/.bash_profile" ;;
+        4) ACTIVE_ALIAS_PROFILE="${HOME}/.bashrc" ;;
+        5) alias_scan_all_macos; ui_pause ;;
+        0|q|Q) return 0 ;;
+        *) ui_warn "Invalid choice."; ui_pause ;;
+    esac
+}
+
+alias_cleanup_legacy_macos() {
+    local prof="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
+    if [[ ! -f "$prof" ]]; then
+        ui_warn "Bestand niet gevonden: $prof"
+        return 0
+    fi
+    if ! grep -q -E "macscripts/|scriptmaster" "$prof" 2>/dev/null; then
+        ui_ok "Geen verouderde 'macscripts/' of 'scriptmaster' regels gevonden in $prof."
+        return 0
+    fi
+    ui_section "GEVONDEN LEGACY REGELS IN $prof"
+    grep -n -E "macscripts/|scriptmaster" "$prof"
+    ui_confirm_action "Verwijder deze verouderde regels (met .bak backup)?" || return 0
+    _alias_backup "$prof"
+    local tmp; tmp="$(mktemp)"
+    grep -v -E "macscripts/|scriptmaster" "$prof" > "$tmp" && mv "$tmp" "$prof"
+    ui_ok "Verouderde regels opgeschoond in $prof."
+}
+
 alias_manager_menu() {
     ACTIVE_ALIAS_PROFILE="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
     while true; do
@@ -349,6 +406,9 @@ alias_manager_menu() {
         ui_item "3" "Wijzigen / Verwijderen"  "Op nummer (met .bak backup)"
         if os_is_qnap; then
             ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle QNAP files"
+        elif os_is_macos; then
+            ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle macOS files"
+            ui_item "5" "Legacy Opschonen"    "Ruim macscripts/ & scriptmaster op"
         fi
         ui_item "0" "Terug"                   ""
         printf "\n"
@@ -358,7 +418,14 @@ alias_manager_menu() {
             1) ui_run_safe "Nieuwe Alias" alias_add_custom ;;
             2) ui_run_safe "Presets Wizard" alias_presets_wizard ;;
             3) ui_run_safe "Alias Wijzigen/Verwijderen" alias_edit_or_delete ;;
-            4) os_is_qnap && alias_select_profile ;;
+            4)
+                if os_is_qnap; then
+                    alias_select_profile
+                elif os_is_macos; then
+                    alias_select_profile_macos
+                fi
+                ;;
+            5) os_is_macos && ui_run_safe "Legacy Opschonen" alias_cleanup_legacy_macos ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
