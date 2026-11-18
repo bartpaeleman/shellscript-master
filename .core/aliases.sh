@@ -306,44 +306,6 @@ alias_select_profile() {
     esac
 }
 
-alias_migrate_unixscripts() {
-    local prof="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
-    if [[ ! -f "$prof" ]]; then
-        ui_warn "Bestand niet gevonden: $prof"
-        return 0
-    fi
-    if ! grep -q -E "/share/Public/unixscripts|scriptmaster" "$prof" 2>/dev/null; then
-        ui_ok "Geen legacy 'unixscripts' of 'scriptmaster' verwijzingen gevonden in $prof."
-        return 0
-    fi
-    ui_section "GEVONDEN LEGACY VERWIJZINGEN IN $prof"
-    grep -n -E "/share/Public/unixscripts|scriptmaster" "$prof"
-    ui_confirm_action "Vervang legacy verwijzingen door 'scripter +<module>' (met .bak backup)?" || return 0
-    _alias_backup "$prof"
-    local tmp; tmp="$(mktemp)"
-    awk -v root="$ROOT_DIR" '
-        /\/share\/Public\/unixscripts\/git-master/ { print "alias gitmaster=\"" root "/scripter +gitmaster\""; next }
-        /\/share\/Public\/unixscripts\/container-master/ { print "alias dockermaster=\"" root "/scripter +containermaster\""; next }
-        /\/share\/Public\/unixscripts\/db-tools/ { print "alias dbmaster=\"" root "/scripter +dbmaster\""; next }
-        /\/share\/Public\/unixscripts\/data-master/ { print "alias datamaster=\"" root "/scripter +datamaster\""; next }
-        /\/share\/Public\/unixscripts\/file-master/ { print "alias filemaster=\"" root "/scripter +filemaster\""; next }
-        /\/share\/Public\/unixscripts\/text-master/ { print "alias textmaster=\"" root "/scripter +textmaster\""; next }
-        /\/share\/Public\/unixscripts\/web-scaffold/ { print "alias webmaster=\"" root "/scripter +webmaster\""; next }
-        /\/share\/Public\/unixscripts|scriptmaster/ { next }
-        { print }
-    ' "$prof" > "$tmp"
-    if [[ -w "$prof" ]]; then
-        mv "$tmp" "$prof"
-    elif command -v sudo >/dev/null 2>&1 && [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
-        sudo mv "$tmp" "$prof"
-    else
-        rm -f "$tmp"
-        ui_err "Permission denied."
-        return 1
-    fi
-    ui_ok "Legacy 'unixscripts' aliassen gemigreerd in $prof (eigen Python/Web regels behouden)."
-}
-
 alias_manager_menu() {
     ACTIVE_ALIAS_PROFILE="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
     while true; do
@@ -364,7 +326,6 @@ alias_manager_menu() {
         ui_item "3" "Wijzigen / Verwijderen"  "Op nummer (met .bak backup)"
         if os_is_qnap; then
             ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle QNAP files"
-            ui_item "5" "Legacy 'unixscripts' Migreren" "Vervang oude paden met .bak backup"
         fi
         ui_item "0" "Terug"                   ""
         printf "\n"
@@ -375,7 +336,6 @@ alias_manager_menu() {
             2) ui_run_safe "Presets Wizard" alias_presets_wizard ;;
             3) ui_run_safe "Alias Wijzigen/Verwijderen" alias_edit_or_delete ;;
             4) os_is_qnap && alias_select_profile ;;
-            5) os_is_qnap && ui_run_safe "Legacy Migratie" alias_migrate_unixscripts ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
