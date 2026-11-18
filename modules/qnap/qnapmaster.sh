@@ -184,7 +184,8 @@ qnap_menu() {
         ui_item "5" "Alias Manager"                "Presets (PRD/DEV/TST, pyvenv) & custom"
         ui_item "0" "Terug"                        ""
         printf "\n"
-        read -rp "Choice: " choice
+        local choice=""
+        ui_read_menu_choice choice "Choice"
         case "$choice" in
             1) ui_run_safe "Container Station status" qnap_container_status ;;
             2) ui_run_safe "QNAP Share cleanup" qnap_share_cleanup ;;

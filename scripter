@@ -250,7 +250,8 @@ interactive_menu() {
         ui_item "0" "Afsluiten (Exit)"  ""
 
         printf "\n"
-        read -rp "Select option: " choice
+        local choice=""
+        ui_read_menu_choice choice "Select option"
         case "$choice" in
             d|D) deps_menu ;;
             p|P)

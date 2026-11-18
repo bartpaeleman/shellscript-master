@@ -234,7 +234,8 @@ alias_manager_menu() {
         ui_item "3" "Wijzigen / Verwijderen"  "Op nummer (met .bak backup)"
         ui_item "0" "Terug"                   ""
         printf "\n"
-        read -rp "Choice: " c
+        local c=""
+        ui_read_menu_choice c "Choice"
         case "$c" in
             1) ui_run_safe "Nieuwe Alias" alias_add_custom ;;
             2) ui_run_safe "Presets Wizard" alias_presets_wizard ;;

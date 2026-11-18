@@ -79,3 +79,7 @@
 
 ### Fix `os_is_macos: command not found` on QNAP (`.core/aliases.sh`)
 - Changed `.core/aliases.sh` to check `declare -F os_is_macos` before sourcing `.core/os_detect.sh`, ensuring OS helper functions are always loaded even when `OS_TYPE` is already exported.
+
+### Default `Enter` = `0` in Menus & Standalone Cleanup
+- Added `ui_read_menu_choice` in `.core/ui.sh` (`Choice [0]: `) so empty `Enter` input defaults to `0` across `scripter`, `.core/aliases.sh`, `qnapmaster.sh`, and all 7 `modules/common/*` modules.
+- Audited and removed legacy `macscripts/` and `unixscripts/` reference directories after passing full quarantine smoke-tests (`shellscript-master` runs 100% standalone).

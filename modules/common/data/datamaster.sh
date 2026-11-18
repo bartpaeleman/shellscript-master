@@ -143,7 +143,8 @@ data_menu() {
         ui_item "5" "Dependency Check"     "Check pandas & pyyaml"
         ui_item "0" "Terug"                ""
         printf "\n"
-        read -rp "Choice: " c
+        local c=""
+        ui_read_menu_choice c "Choice"
         case "$c" in
             1) ui_run_safe "View CSV as Table" opt_table ;;
             2) ui_run_safe "Convert Delimiter" opt_delimiter ;;

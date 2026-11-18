@@ -382,7 +382,8 @@ git_menu() {
         ui_item "0"  "Terug"                   ""
 
         printf "\n"
-        read -rp "Choice: " c
+        local c=""
+        ui_read_menu_choice c "Choice"
         case "$c" in
             1)  ui_run_safe "Status & Branch Info" opt_status ;;
             2)  ui_run_safe "Pending Changes (Diff)" opt_diff ;;
