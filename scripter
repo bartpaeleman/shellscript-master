@@ -49,31 +49,37 @@ show_help() {
     printf "  ./scripter -h | --help            Show this help message\n"
 
     printf "\n%bAVAILABLE +SWITCHES:%b\n" "${YELLOW}${BOLD}" "${NC}"
-    printf "  %b[UNIVERSAL]%b\n" "${GREEN}" "${NC}"
-    printf "    +gitmaster (+git)               Git Workflow Manager\n"
-    printf "    +containermaster (+container)   Docker / Container Manager\n"
-    printf "    +dbmaster (+db)                 Database Tools\n"
-    printf "    +datamaster (+data)             Data Processing Tools\n"
-    printf "    +textmaster (+text)             Text Processing Tools\n"
-    printf "    +filemaster (+file)             File Management Tools\n"
-    printf "    +webmaster (+web)               Web Scaffold Tools\n"
+    printf "  %bDEVELOPMENT & OPS:%b\n" "${CYAN}" "${NC}"
+    printf "    +gitmaster (+git)         [UNI] Git Workflow Manager\n"
+    printf "    +containermaster          [UNI] Docker / Container Manager\n"
+    printf "    +dbmaster (+db)           [UNI] Database Tools\n"
+    printf "    +webmaster (+web)         [UNI] Web Scaffold Tools\n"
+
+    if [[ "$OS_TYPE" == "macOS" || "$OS_TYPE" == "QNAP" || "$SHOW_ALL" == "true" ]]; then
+        printf "  %bSYSTEEMBEHEER:%b\n" "${CYAN}" "${NC}"
+        [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]] && printf "    +macmaster (+macsystem)   [MAC] macOS System Maintenance\n"
+        [[ "$OS_TYPE" == "QNAP"  || "$SHOW_ALL" == "true" ]] && printf "    +qnapmaster (+qnap)       [QNAP] Container, Share & Entware\n"
+    fi
+
+    printf "  %bBESTANDS- & DATABEHEER:%b\n" "${CYAN}" "${NC}"
+    printf "    +filemaster (+file)       [UNI] File Management Tools\n"
+    printf "    +datamaster (+data)       [UNI] Data Processing Tools\n"
+    printf "    +textmaster (+text)       [UNI] Text Processing Tools\n"
+    [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]] && printf "    +rename_ebooks (+ebooks)  [MAC] E-book Metadata Renamer\n"
+
     if [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]]; then
-        printf "  %b[macOS]%b\n" "${MAGENTA}" "${NC}"
-        printf "    +macmaster (+macsystem)         macOS System Maintenance\n"
-        printf "    +networkmaster (+net)           Network Scanner & Tools\n"
-        printf "    +cybermaster (+cyber)           Cybersecurity & Recon\n"
-        printf "    +intelmaster (+intel)           Threat Intelligence\n"
-        printf "    +audiomaster (+audio)           Audio Processing & Tagging\n"
-        printf "    +videomaster (+video)           Video Processing\n"
-        printf "    +imagemaster (+image)           Image Batch Processing\n"
-        printf "    +karaokemaster (+karaoke)       Karaoke & CDG Tools\n"
-        printf "    +rename_ebooks (+ebooks)        E-book Metadata Renamer\n"
+        printf "  %bNETWERK & CYBERSECURITY:%b\n" "${CYAN}" "${NC}"
+        printf "    +networkmaster (+net)     [MAC] Network Scanner & Tools\n"
+        printf "    +cybermaster (+cyber)     [MAC] Cybersecurity & Recon\n"
+        printf "    +intelmaster (+intel)     [MAC] Threat Intelligence\n"
+        printf "  %bMEDIA & MULTIMEDIA:%b\n" "${CYAN}" "${NC}"
+        printf "    +audiomaster (+audio)     [MAC] Audio Processing & Tagging\n"
+        printf "    +videomaster (+video)     [MAC] Video Processing\n"
+        printf "    +imagemaster (+image)     [MAC] Image Batch Processing\n"
+        printf "    +karaokemaster (+karaoke) [MAC] Karaoke & CDG Tools\n"
     fi
-    if [[ "$OS_TYPE" == "QNAP" || "$SHOW_ALL" == "true" ]]; then
-        printf "  %b[QNAP / Linux]%b\n" "${CYAN}" "${NC}"
-        printf "    +qnap (+qnapmaster)             QNAP Container, Share & Entware Tools\n"
-    fi
-    printf "  %b[SYSTEM]%b\n" "${YELLOW}" "${NC}"
+
+    printf "  %bUTILITIES & ONDERHOUD:%b\n" "${YELLOW}" "${NC}"
     printf "    +deps [status|install|update]   Dependency & Update Center\n"
     printf "    --persist                       Make scripter persistent on this OS\n"
     if [[ "$SHOW_ALL" == "false" ]]; then
@@ -167,6 +173,14 @@ route_module() {
     esac
 }
 
+_is_visible() {
+    local req_os="$1"
+    [[ "$SHOW_ALL" == "true" || "$req_os" == "UNI" ]] && return 0
+    [[ "$req_os" == "MAC" && "$OS_TYPE" == "macOS" ]] && return 0
+    [[ "$req_os" == "QNAP" && "$OS_TYPE" == "QNAP" ]] && return 0
+    return 1
+}
+
 interactive_menu() {
     while true; do
         ui_clear_screen
@@ -174,76 +188,84 @@ interactive_menu() {
             "System : ${CYAN}$(_os_display)${NC} | Arch: ${CYAN}${ARCH}${NC}" \
             "PkgMgr : ${CYAN}${PKG_MGR}${NC} | Root: ${CYAN}${IS_ROOT}${NC}"
 
-        ui_section "1. CORE / UNIVERSAL $(ui_badge CORE)"
-        ui_item "1" "gitmaster"       "Git workflow manager"
-        ui_item "2" "containermaster" "Docker & container tools"
-        ui_item "3" "dbmaster"        "Database utilities"
-        ui_item "4" "datamaster"      "Data processing"
-        ui_item "5" "textmaster"      "Text & log utilities"
-        ui_item "6" "filemaster"      "File & batch rename tools"
-        ui_item "7" "webmaster"       "Web project scaffold"
+        local cat_idx=1
+        local item_idx=1
+        local MENU_TARGETS=()
 
-        if [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]]; then
-            ui_section "2. macOS WORKSTATION $(ui_badge MAC)"
-            ui_item "8"  "macmaster"      "System, crontab, zshrc, cleanup"
-            ui_item "9"  "networkmaster"  "Network scanner & geotrace"
-            ui_item "10" "cybermaster"    "Recon, mail & risk scoring"
-            ui_item "11" "intelmaster"    "Threat intelligence analyzer"
-            ui_item "12" "audiomaster"    "Audio conversion & MP3 tags"
-            ui_item "13" "videomaster"    "Video conversion & A/V tools"
-            ui_item "14" "imagemaster"    "Image batch & EXIF tools"
-            ui_item "15" "karaokemaster"  "CDG & karaoke organizer"
-            ui_item "16" "rename_ebooks"  "E-book metadata renamer"
-        fi
+        _render_cat() {
+            local title="$1"; shift
+            local visible=()
+            local entry req mod desc
+            for entry in "$@"; do
+                IFS='|' read -r req mod desc <<< "$entry"
+                _is_visible "$req" && visible+=("$entry")
+            done
+            [[ ${#visible[@]} -eq 0 ]] && return 0
+            ui_section "${cat_idx}. ${title}"
+            ((cat_idx++))
+            for entry in "${visible[@]}"; do
+                IFS='|' read -r req mod desc <<< "$entry"
+                ui_item "$item_idx" "$mod [$req]" "$desc"
+                MENU_TARGETS+=("+$mod")
+                ((item_idx++))
+            done
+        }
 
-        if [[ "$OS_TYPE" == "QNAP" || "$SHOW_ALL" == "true" ]]; then
-            local q_idx="8"
-            [[ "$SHOW_ALL" == "true" ]] && q_idx="17"
-            local sec_num="2"
-            [[ "$SHOW_ALL" == "true" ]] && sec_num="3"
-            ui_section "${sec_num}. QNAP NAS & LINUX SERVER $(ui_badge QNAP)"
-            ui_item "$q_idx" "qnapmaster" "Container Station, @Recycle, Entware"
-        fi
+        _render_cat "DEVELOPMENT & OPS" \
+            "UNI|gitmaster|Git workflow manager" \
+            "UNI|containermaster|Docker & container tools" \
+            "UNI|dbmaster|Database utilities" \
+            "UNI|webmaster|Web project scaffold"
 
-        ui_section "SYSTEM & SETUP"
-        ui_item "D" "Dependency Center" "Check, install or update tools"
+        _render_cat "SYSTEEMBEHEER" \
+            "MAC|macmaster|System, crontab, zshrc, cleanup" \
+            "QNAP|qnapmaster|Container Station, @Recycle, Entware"
+
+        _render_cat "BESTANDS- & DATABEHEER" \
+            "UNI|filemaster|File & batch rename tools" \
+            "UNI|datamaster|Data & CSV/JSON/YAML tools" \
+            "UNI|textmaster|Text & log utilities" \
+            "MAC|rename_ebooks|E-book metadata renamer"
+
+        _render_cat "NETWERK & CYBERSECURITY" \
+            "MAC|networkmaster|Network scanner & geotrace" \
+            "MAC|cybermaster|Recon, mail & risk scoring" \
+            "MAC|intelmaster|Threat intelligence analyzer"
+
+        _render_cat "MEDIA & MULTIMEDIA" \
+            "MAC|audiomaster|Audio conversion & MP3 tags" \
+            "MAC|videomaster|Video conversion & A/V tools" \
+            "MAC|imagemaster|Image batch & EXIF tools" \
+            "MAC|karaokemaster|CDG & karaoke organizer"
+
+        ui_section "${cat_idx}. UTILITIES & ONDERHOUD"
         ui_item "P" "Make Persistent"   "Configure shell alias/PATH for $OS_TYPE"
+        ui_item "D" "Dependency Center" "Check, install or update tools"
+        ui_item "H" "Help & CLI"        "Show available +switches"
         ui_item "0" "Exit"              ""
 
         printf "\n"
         read -rp "Select option: " choice
         case "$choice" in
-            1)  route_module "+gitmaster" ;;
-            2)  route_module "+containermaster" ;;
-            3)  route_module "+dbmaster" ;;
-            4)  route_module "+datamaster" ;;
-            5)  route_module "+textmaster" ;;
-            6)  route_module "+filemaster" ;;
-            7)  route_module "+webmaster" ;;
-            8)
-                if [[ "$OS_TYPE" == "QNAP" && "$SHOW_ALL" != "true" ]]; then
-                    route_module "+qnapmaster"
-                else
-                    route_module "+macmaster"
-                fi
-                ;;
-            9)  route_module "+networkmaster" ;;
-            10) route_module "+cybermaster" ;;
-            11) route_module "+intelmaster" ;;
-            12) route_module "+audiomaster" ;;
-            13) route_module "+videomaster" ;;
-            14) route_module "+imagemaster" ;;
-            15) route_module "+karaokemaster" ;;
-            16) route_module "+rename_ebooks" ;;
-            17) route_module "+qnapmaster" ;;
             d|D) deps_menu ;;
             p|P)
                 persist_system
                 printf "\n"
                 read -rp "Press [Enter] to return to menu..." _
                 ;;
+            h|H)
+                ui_clear_screen
+                show_help
+                read -rp "Press [Enter] to return to menu..." _
+                ;;
             0|q|Q|exit) exit 0 ;;
-            *) ui_warn "Invalid option: $choice" ;;
+            *)
+                if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 && "$choice" -le ${#MENU_TARGETS[@]} ]]; then
+                    route_module "${MENU_TARGETS[$((choice-1))]}"
+                else
+                    ui_warn "Invalid option: $choice"
+                fi
+                ;;
         esac
     done
 }

@@ -6,14 +6,16 @@ detect_os() {
     uname_s="$(uname -s 2>/dev/null || echo Unknown)"
     ARCH="$(uname -m 2>/dev/null || echo unknown)"
 
-    if [[ "$uname_s" == "Darwin" ]]; then
-        OS_TYPE="macOS"
-    elif [[ -f /etc/config/uLinux.conf ]] || [[ -d /share/CACHEDEV1_DATA ]] || [[ -x /sbin/getcfg ]]; then
-        OS_TYPE="QNAP"
-    elif [[ "$uname_s" == "Linux" ]]; then
-        OS_TYPE="Linux"
-    else
-        OS_TYPE="Unknown"
+    if [[ -z "${OS_TYPE:-}" ]]; then
+        if [[ "$uname_s" == "Darwin" ]]; then
+            OS_TYPE="macOS"
+        elif [[ -f /etc/config/uLinux.conf ]] || [[ -d /share/CACHEDEV1_DATA ]] || [[ -x /sbin/getcfg ]]; then
+            OS_TYPE="QNAP"
+        elif [[ "$uname_s" == "Linux" ]]; then
+            OS_TYPE="Linux"
+        else
+            OS_TYPE="Unknown"
+        fi
     fi
 
     if command -v brew >/dev/null 2>&1; then

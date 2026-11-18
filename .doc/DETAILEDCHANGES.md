@@ -45,3 +45,8 @@
 - Added `ui_cancel_msg()`, `ui_prompt_input()`, and `ui_confirm_action()` to `.core/ui.sh` with universal `0`/`q`/`cancel` escape.
 - Updated `gitmaster` Option 8 (`Sync / Pull`) with clear Standard Pull `[Default]` vs Rebase Pull descriptions and `0) Cancel`.
 - Updated `gitmaster` interactive prompts and branch lists with `0) Cancel / Terug` and `[Cancelled] Geen wijzigingen uitgevoerd.`.
+
+### Functional Menu Grouping & Dynamic Numbering (`scripter` & `.core/os_detect.sh`)
+- Grouped `scripter` menu and `--help` functionally (`DEVELOPMENT & OPS`, `SYSTEEMBEHEER`, `BESTANDS- & DATABEHEER`, `NETWERK & CYBERSECURITY`, `MEDIA & MULTIMEDIA`, `UTILITIES & ONDERHOUD`) with `[UNI]`, `[MAC]`, `[QNAP]` labels.
+- Added dynamic category (`cat_idx`) and sequential item (`item_idx`) numbering so empty categories are omitted without gaps.
+- Updated `.core/os_detect.sh` to respect `OS_TYPE` environment overrides for simulation/testing.
