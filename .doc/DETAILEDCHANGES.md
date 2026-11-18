@@ -25,3 +25,7 @@
 ### TUI Screen Reset & Full `gitmaster` Parity
 - **`.core/ui.sh` & `scripter`**: Added `ui_clear_screen()` (`\033[2J\033[3J\033[H` with `clear` fallback) and `ui_pause()` so every menu transition starts cleanly at the top of the terminal.
 - **`modules/common/git/gitmaster.sh`**: Restored all 23 options across Categories A–D (Info & Inspectie, Branching & Development, Cleanup & Maintenance, Fix & Emergency Recovery) with Bash 3.2+ & QNAP Linux compatibility and full CLI subcommand routing.
+
+### Container Master (`modules/common/container/`)
+- Restored all 10 functions (`list`, `logs` with `SIGINT` trap, `inspect` via `inspect_viewer.py`, `start`, `stop`, `restart`, `shell` with `/bin/bash` -> `/bin/sh` fallback, `create`/`stack`, `rm` with `--force`, `prune`).
+- Added QNAP Container Station PATH support (`/share/CACHEDEV1_DATA/.qpkg/container-station/bin`) and macOS/Linux Docker daemon check.
