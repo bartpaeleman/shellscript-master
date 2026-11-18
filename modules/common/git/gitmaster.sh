@@ -110,35 +110,63 @@ opt_start_branch() {
 
 opt_checkout() {
     _require_repo || return 1
-    git fetch --all --quiet 2>/dev/null || true
-    local target=""
-    if command -v fzf >/dev/null 2>&1; then
-        target="$(git branch -a | sed 's/^[* ]*//' | grep -v 'HEAD' | fzf --prompt="Checkout branch (Esc to cancel): ")"
-        [[ -z "$target" ]] && { ui_cancel_msg; return 0; }
-    else
-        local branches=()
-        local i=1
-        echo "   0) Cancel / Terug"
-        while IFS= read -r b; do
-            b="${b#\* }"; b="${b#  }"
-            [[ -z "$b" || "$b" == *"->"* ]] && continue
+    git fetch --all --prune >/dev/null 2>&1 || true
+    local local_branches remote_branches
+    local_branches="$(git branch --format='%(refname:short)' 2>/dev/null)"
+    remote_branches="$(git branch -r --format='%(refname:short)' 2>/dev/null | grep -v 'HEAD' | sed 's|^origin/||')"
+
+    local branches=() tags=()
+    local b
+    while IFS= read -r b; do
+        [[ -z "$b" ]] && continue
+        branches+=("$b")
+        tags+=("LOKAAL")
+    done <<< "$local_branches"
+
+    while IFS= read -r b; do
+        [[ -z "$b" ]] && continue
+        local exists=0 lb
+        for lb in "${branches[@]}"; do
+            [[ "$lb" == "$b" ]] && { exists=1; break; }
+        done
+        if [[ "$exists" -eq 0 ]]; then
             branches+=("$b")
-            printf "  %2d) %s\n" "$i" "$b"
-            ((i++))
-        done < <(git branch -a)
-        local num=""
-        ui_prompt_input num "Select number" || return 0
-        if [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 1 && "$num" -le ${#branches[@]} ]]; then
-            target="${branches[$((num-1))]}"
-        else
-            ui_cancel_msg; return 0
+            tags+=("REMOTE - origin")
         fi
+    done <<< "$remote_branches"
+
+    if [[ ${#branches[@]} -eq 0 ]]; then
+        ui_warn "Geen branches gevonden."
+        return 0
     fi
-    if [[ "$target" == remotes/origin/* ]]; then
-        local local_b="${target#remotes/origin/}"
-        git checkout -b "$local_b" "$target" 2>/dev/null || git checkout "$local_b"
+
+    ui_section "SWITCH / CHECKOUT BRANCH"
+    local i
+    for ((i=0; i<${#branches[@]}; i++)); do
+        if [[ "${tags[$i]}" == "LOKAAL" ]]; then
+            printf "  %b%2d)%b %-34s %b[%s]%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "${branches[$i]}" "${GREEN}" "${tags[$i]}" "${NC}"
+        else
+            printf "  %b%2d)%b %-34s %b[%s]%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "${branches[$i]}" "${YELLOW}" "${tags[$i]}" "${NC}"
+        fi
+    done
+    printf "  %b 0)%b Terug / Annuleren\n\n" "${CYAN}${BOLD}" "${NC}"
+
+    local num=""
+    ui_read_menu_choice num "Select branch"
+    if [[ "$num" == "0" || "$num" == "q" || "$num" == "Q" ]]; then
+        ui_cancel_msg
+        return 0
+    fi
+    if [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 1 && "$num" -le ${#branches[@]} ]]; then
+        local idx=$((num-1))
+        local target="${branches[$idx]}"
+        if [[ "${tags[$idx]}" == "REMOTE - origin" ]]; then
+            git checkout -b "$target" "origin/$target" 2>/dev/null || git checkout "$target"
+        else
+            git checkout "$target"
+        fi
     else
-        git checkout "$target"
+        ui_cancel_msg
     fi
 }
 
