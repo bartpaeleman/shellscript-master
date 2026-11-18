@@ -92,7 +92,8 @@ Maak `scripter` overal in de terminal beschikbaar:
   - `containermaster` (10 functies): `list`/`ls`, `logs`/`lg` (Ctrl+C veilig), `inspect`/`in` (`inspect_viewer.py`), `start`, `stop`, `restart`/`rs`, `shell`/`sh` (`/bin/bash` -> `/bin/sh`), `create`, `rm`, `cleanup`/`prune`.
   - `dbmaster`: `backup` (`.sql.gz` via `mysqldump`), `analyze` (`db_stats.py`), `check`.
   - `webmaster`: `scaffold` (`assets/`, `includes/`, `config/`, `index.php`), `readme` (`generate_readme.py`), `serve`.
-- **Systeembeheer:** `macmaster` (`crontab_manager`, `zshrc_editor`, `auto_cleanup`, `clear_cache`, `uninstall`) & `qnapmaster` (`containers`, `cleanup`, `entware`).
+- **Systeembeheer:** `macmaster` (`crontab_manager`, `zshrc_editor`, `auto_cleanup`, `clear_cache`, `uninstall`, `aliases`) & `qnapmaster` (`containers`, `cleanup`, `entware`, `persistence`, `aliases`).
+  - **Alias Manager (`-m aliases` / `-q aliases`):** Beheer aliassen in `# >>> scripter-aliases >>>` met Tab pad-autocomplete, automatische `.bak` backup, `pyvenv` preset en Webserver `prd`/`dev`/`tst` presets (`/share/Web` op QNAP, `~/Sites` op macOS).
 - **Bestands- & Databeheer:** `filemaster` (`rename`, `mkdirs`, `archive`, `cleanup`, `compare`, `sync`, `csv`, `fzf`, `large`), `datamaster` (`table`, `delimiter`, `convert`, `normalize`, `deps`), `textmaster` (`stats`, `replace`, `diff`, `merge`, `case`), `rename_ebooks`.
 - **Netwerk & Cybersecurity `[MAC]`:** `networkmaster`, `cybermaster`, `intelmaster`.
 - **Media & Multimedia `[MAC]`:** `audiomaster`, `videomaster`, `imagemaster`, `karaokemaster`.

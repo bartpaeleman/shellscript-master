@@ -6,6 +6,7 @@ ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # shellcheck source=.core/os_detect.sh
 [[ -z "${OS_TYPE:-}" ]] && source "$ROOT_DIR/.core/os_detect.sh"
 source "$ROOT_DIR/.core/ui.sh"
+source "$ROOT_DIR/.core/aliases.sh"
 
 qnap_container_status() {
     echo "=== QNAP Container Station Status ==="
@@ -180,6 +181,7 @@ qnap_menu() {
         ui_item "2" "Share cleanup"                "@Recycle / .@__thumb"
         ui_item "3" "Entware update"               "opkg update && opkg upgrade"
         ui_item "4" "Persistence Scanner / Editor" "Scan & edit QNAP profiles/autorun"
+        ui_item "5" "Alias Manager"                "Presets (PRD/DEV/TST, pyvenv) & custom"
         ui_item "0" "Terug"                        ""
         printf "\n"
         read -rp "Choice: " choice
@@ -188,6 +190,7 @@ qnap_menu() {
             2) ui_run_safe "QNAP Share cleanup" qnap_share_cleanup ;;
             3) ui_run_safe "Entware update" qnap_entware_update ;;
             4) ui_run_safe "Persistence Scanner" qnap_persistence_scan ;;
+            5) alias_manager_menu ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
@@ -200,9 +203,10 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
         cleanup)           qnap_share_cleanup ;;
         entware|update)    qnap_entware_update ;;
         scan|persistence)  qnap_persistence_scan ;;
+        aliases|alias)     alias_manager_menu ;;
         menu)              qnap_menu ;;
         --help|-h)
-            echo "Usage: scripter -q {containers|cleanup|entware|persistence|menu}"
+            echo "Usage: scripter -q {containers|cleanup|entware|persistence|aliases|menu}"
             ;;
         *)
             echo "Unknown subcommand: $1"

@@ -71,3 +71,8 @@
 ### QNAP Persistence & Profile Scanner / Editor (`modules/qnap/qnapmaster.sh`)
 - Added `qnap_persistence_scan` (`scripter -q persistence`) scanning `[PERSISTENT]` (`/share/homes/*/.profile`, `/opt/etc/profile`, `/opt/bin/scripter`, `/etc/config/autorun.sh`) and `[SESSION]` (`/root/.*`, `/etc/.*`, `/usr/local/bin/scripter`, `/usr/bin/scripter`) locations.
 - Added safe per-file actions: timestamped `.bak` backup, `sudo`-aware editing (`nano`/`vim`/`vi`), rule preview, and `# >>> scripter-hub >>>` block removal.
+
+### Cross-Platform Alias Manager (`.core/aliases.sh`, `qnapmaster`, `macmaster`)
+- Added `.core/aliases.sh` managing `# >>> scripter-aliases >>>` blocks with `.bak` backups, numbered listing/editing/deletion, and `read -e` Tab path-autocomplete.
+- Added Presets Wizard: Webserver `prd`/`dev`/`tst` (`/share/Web` on QNAP, `~/Sites` on macOS), `pyvenv` (`.dep/.venv/bin/activate`), and macOS shortcuts (`flushdns`, `showfiles`, `hidefiles`, `brewup`).
+- Integrated via `./scripter -q aliases` and `./scripter -m aliases`.

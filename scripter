@@ -148,6 +148,9 @@ route_module() {
         macmaster|macsystem|mac|m)
             if [[ -z "${1:-}" ]]; then
                 _run_tool "$ROOT_DIR/modules/macos/macsystem/macmanager.sh"
+            elif [[ "${1:-}" == "aliases" || "${1:-}" == "alias" ]]; then
+                source "$ROOT_DIR/.core/aliases.sh"
+                alias_manager_menu
             else
                 local sub="$1"; shift
                 _run_tool "$ROOT_DIR/modules/macos/macsystem/${sub%.sh}.sh" "$@"
