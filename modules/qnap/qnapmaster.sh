@@ -131,7 +131,7 @@ qnap_persistence_scan() {
     local candidates=()
     local f
     # Persistent locations
-    for f in /share/homes/*/.profile /share/homes/*/.bashrc /opt/etc/profile /opt/bin/scripter /etc/config/autorun.sh; do
+    for f in /share/Public/.bash_aliases /share/homes/*/.profile /share/homes/*/.bashrc /opt/etc/profile /opt/bin/scripter /etc/config/autorun.sh; do
         [[ -e "$f" || -L "$f" ]] && candidates+=("PERSISTENT|$f")
     done
     # Session / Volatile locations

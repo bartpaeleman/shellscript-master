@@ -12,11 +12,15 @@ _alias_profile() {
             echo "${HOME}/.zshrc"
             ;;
         QNAP)
-            local u; u="$(whoami 2>/dev/null || echo admin)"
-            if [[ -d "/share/homes/${u}" ]]; then
-                echo "/share/homes/${u}/.profile"
+            if [[ -d "/share/Public" ]]; then
+                echo "/share/Public/.bash_aliases"
             else
-                echo "${HOME}/.profile"
+                local u; u="$(whoami 2>/dev/null || echo admin)"
+                if [[ -d "/share/homes/${u}" ]]; then
+                    echo "/share/homes/${u}/.profile"
+                else
+                    echo "${HOME}/.profile"
+                fi
             fi
             ;;
         *)
@@ -116,19 +120,20 @@ alias_presets_wizard() {
     ui_section "ALIAS PRESETS WIZARD ($OS_TYPE)"
     echo "  1) Webserver Presets (prd, dev, tst)"
     echo "  2) Python Venv Preset (pyvenv -> .dep/.venv)"
+    echo "  3) Directe Module-Aliassen (gitmaster, dockermaster, dbmaster, ...)"
     if os_is_macos; then
-        echo "  3) macOS Shortcuts (flushdns, showfiles, hidefiles, brewup)"
+        echo "  4) macOS Shortcuts (flushdns, showfiles, hidefiles, brewup)"
     fi
     echo "  0) Terug"
     local c=""
-    ui_prompt_input c "Select preset" || return 0
+    ui_read_menu_choice c "Select preset"
     case "$c" in
         1)
             local def_prd def_dev def_tst
             if os_is_qnap; then
-                def_prd="/share/Web"
-                def_dev="/share/Web/dev"
-                def_tst="/share/Web/tst"
+                def_prd="/share/Web/"
+                def_dev="/share/Web/DEV/"
+                def_tst="/share/Web/TEST/"
             else
                 def_prd="${HOME}/Sites"
                 def_dev="${HOME}/Sites/dev"
@@ -152,6 +157,31 @@ alias_presets_wizard() {
             _alias_upsert "$prof" "pyvenv" "source \"${ROOT_DIR}/.dep/.venv/bin/activate\""
             ;;
         3)
+            _alias_upsert "$prof" "scripter" "${ROOT_DIR}/scripter"
+            _alias_upsert "$prof" "scripts" "cd \"${ROOT_DIR}\""
+            _alias_upsert "$prof" "gitmaster" "${ROOT_DIR}/scripter +gitmaster"
+            _alias_upsert "$prof" "dockermaster" "${ROOT_DIR}/scripter +containermaster"
+            _alias_upsert "$prof" "containermaster" "${ROOT_DIR}/scripter +containermaster"
+            _alias_upsert "$prof" "dbmaster" "${ROOT_DIR}/scripter +dbmaster"
+            _alias_upsert "$prof" "webmaster" "${ROOT_DIR}/scripter +webmaster"
+            _alias_upsert "$prof" "datamaster" "${ROOT_DIR}/scripter +datamaster"
+            _alias_upsert "$prof" "filemaster" "${ROOT_DIR}/scripter +filemaster"
+            _alias_upsert "$prof" "textmaster" "${ROOT_DIR}/scripter +textmaster"
+            if os_is_qnap; then
+                _alias_upsert "$prof" "qnapmaster" "${ROOT_DIR}/scripter +qnapmaster"
+                _alias_upsert "$prof" "sysmaster" "${ROOT_DIR}/scripter +qnapmaster"
+            elif os_is_macos; then
+                _alias_upsert "$prof" "macmaster" "${ROOT_DIR}/scripter +macmaster"
+                _alias_upsert "$prof" "networkmaster" "${ROOT_DIR}/scripter +networkmaster"
+                _alias_upsert "$prof" "cybermaster" "${ROOT_DIR}/scripter +cybermaster"
+                _alias_upsert "$prof" "intelmaster" "${ROOT_DIR}/scripter +intelmaster"
+                _alias_upsert "$prof" "audiomaster" "${ROOT_DIR}/scripter +audiomaster"
+                _alias_upsert "$prof" "videomaster" "${ROOT_DIR}/scripter +videomaster"
+                _alias_upsert "$prof" "imagemaster" "${ROOT_DIR}/scripter +imagemaster"
+                _alias_upsert "$prof" "karaokemaster" "${ROOT_DIR}/scripter +karaokemaster"
+            fi
+            ;;
+        4)
             if os_is_macos; then
                 _alias_upsert "$prof" "flushdns" "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder"
                 _alias_upsert "$prof" "showfiles" "defaults write com.apple.finder AppleShowAllFiles -bool true && killall Finder"
@@ -159,6 +189,7 @@ alias_presets_wizard() {
                 _alias_upsert "$prof" "brewup" "brew update && brew upgrade && brew cleanup"
             fi
             ;;
+        0|q|Q) ui_cancel_msg ;;
         *) ui_cancel_msg ;;
     esac
 }
@@ -230,7 +261,7 @@ alias_scan_all_qnap() {
     ui_section "OVERZICHT ALLE QNAP PROFIELEN"
     local u; u="$(whoami 2>/dev/null || echo admin)"
     local p
-    for p in "/share/homes/${u}/.profile" "/root/.profile" "/root/.bashrc" "/etc/profile" "/opt/etc/profile"; do
+    for p in "/share/Public/.bash_aliases" "/share/homes/${u}/.profile" "/root/.profile" "/root/.bashrc" "/etc/profile" "/opt/etc/profile"; do
         if [[ -f "$p" ]]; then
             local cnt; cnt="$(grep -c '^alias ' "$p" 2>/dev/null || echo 0)"
             printf "  %b[OK]%b %-32s (%s aliassen)\n" "${GREEN}" "${NC}" "$p" "$cnt"
@@ -243,6 +274,7 @@ alias_scan_all_qnap() {
 
 alias_select_profile() {
     local u; u="$(whoami 2>/dev/null || echo admin)"
+    local p_pub="/share/Public/.bash_aliases"
     local p_home="/share/homes/${u}/.profile"
     local p_opt="/opt/etc/profile"
     local opt_tag="${GREEN}[PERSISTENT — Entware]${NC}"
@@ -250,26 +282,66 @@ alias_select_profile() {
 
     ui_clear_screen
     ui_header "DOELBESTAND SELECTIE (QNAP)" "Actief: ${CYAN}${ACTIVE_ALIAS_PROFILE}${NC}"
-    printf "  %b 1)%b %-30s %b[PERSISTENT]%b\n" "${CYAN}${BOLD}" "${NC}" "$p_home" "${GREEN}" "${NC}"
-    printf "  %b 2)%b %-30s %b[SESSION / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/root/.profile" "${YELLOW}" "${NC}"
-    printf "  %b 3)%b %-30s %b[SESSION / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/root/.bashrc" "${YELLOW}" "${NC}"
-    printf "  %b 4)%b %-30s %b[SYSTEM / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/etc/profile" "${YELLOW}" "${NC}"
-    printf "  %b 5)%b %-30s %b\n" "${CYAN}${BOLD}" "${NC}" "$p_opt" "$opt_tag"
-    printf "  %b 6)%b Scan alle bovenstaande bestanden tegelijk\n" "${CYAN}${BOLD}" "${NC}"
+    printf "  %b 1)%b %-30s %b[PERSISTENT — Centraal Alias Bestand]%b\n" "${CYAN}${BOLD}" "${NC}" "$p_pub" "${GREEN}" "${NC}"
+    printf "  %b 2)%b %-30s %b[PERSISTENT]%b\n" "${CYAN}${BOLD}" "${NC}" "$p_home" "${GREEN}" "${NC}"
+    printf "  %b 3)%b %-30s %b[SESSION / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/root/.profile" "${YELLOW}" "${NC}"
+    printf "  %b 4)%b %-30s %b[SESSION / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/root/.bashrc" "${YELLOW}" "${NC}"
+    printf "  %b 5)%b %-30s %b[SYSTEM / VOLATILE RAM]%b\n" "${CYAN}${BOLD}" "${NC}" "/etc/profile" "${YELLOW}" "${NC}"
+    printf "  %b 6)%b %-30s %b\n" "${CYAN}${BOLD}" "${NC}" "$p_opt" "$opt_tag"
+    printf "  %b 7)%b Scan alle bovenstaande bestanden tegelijk\n" "${CYAN}${BOLD}" "${NC}"
     printf "  %b 0)%b Terug\n\n" "${CYAN}${BOLD}" "${NC}"
 
     local s=""
     ui_read_menu_choice s "Choice"
     case "$s" in
-        1) ACTIVE_ALIAS_PROFILE="$p_home" ;;
-        2) ACTIVE_ALIAS_PROFILE="/root/.profile" ;;
-        3) ACTIVE_ALIAS_PROFILE="/root/.bashrc" ;;
-        4) ACTIVE_ALIAS_PROFILE="/etc/profile" ;;
-        5) ACTIVE_ALIAS_PROFILE="$p_opt" ;;
-        6) alias_scan_all_qnap; ui_pause ;;
+        1) ACTIVE_ALIAS_PROFILE="$p_pub" ;;
+        2) ACTIVE_ALIAS_PROFILE="$p_home" ;;
+        3) ACTIVE_ALIAS_PROFILE="/root/.profile" ;;
+        4) ACTIVE_ALIAS_PROFILE="/root/.bashrc" ;;
+        5) ACTIVE_ALIAS_PROFILE="/etc/profile" ;;
+        6) ACTIVE_ALIAS_PROFILE="$p_opt" ;;
+        7) alias_scan_all_qnap; ui_pause ;;
         0|q|Q) return 0 ;;
         *) ui_warn "Invalid choice."; ui_pause ;;
     esac
+}
+
+alias_migrate_unixscripts() {
+    local prof="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
+    if [[ ! -f "$prof" ]]; then
+        ui_warn "Bestand niet gevonden: $prof"
+        return 0
+    fi
+    if ! grep -q -E "/share/Public/unixscripts|scriptmaster" "$prof" 2>/dev/null; then
+        ui_ok "Geen legacy 'unixscripts' of 'scriptmaster' verwijzingen gevonden in $prof."
+        return 0
+    fi
+    ui_section "GEVONDEN LEGACY VERWIJZINGEN IN $prof"
+    grep -n -E "/share/Public/unixscripts|scriptmaster" "$prof"
+    ui_confirm_action "Vervang legacy verwijzingen door 'scripter +<module>' (met .bak backup)?" || return 0
+    _alias_backup "$prof"
+    local tmp; tmp="$(mktemp)"
+    awk -v root="$ROOT_DIR" '
+        /\/share\/Public\/unixscripts\/git-master/ { print "alias gitmaster=\"" root "/scripter +gitmaster\""; next }
+        /\/share\/Public\/unixscripts\/container-master/ { print "alias dockermaster=\"" root "/scripter +containermaster\""; next }
+        /\/share\/Public\/unixscripts\/db-tools/ { print "alias dbmaster=\"" root "/scripter +dbmaster\""; next }
+        /\/share\/Public\/unixscripts\/data-master/ { print "alias datamaster=\"" root "/scripter +datamaster\""; next }
+        /\/share\/Public\/unixscripts\/file-master/ { print "alias filemaster=\"" root "/scripter +filemaster\""; next }
+        /\/share\/Public\/unixscripts\/text-master/ { print "alias textmaster=\"" root "/scripter +textmaster\""; next }
+        /\/share\/Public\/unixscripts\/web-scaffold/ { print "alias webmaster=\"" root "/scripter +webmaster\""; next }
+        /\/share\/Public\/unixscripts|scriptmaster/ { next }
+        { print }
+    ' "$prof" > "$tmp"
+    if [[ -w "$prof" ]]; then
+        mv "$tmp" "$prof"
+    elif command -v sudo >/dev/null 2>&1 && [[ "${EUID:-$(id -u)}" -ne 0 ]]; then
+        sudo mv "$tmp" "$prof"
+    else
+        rm -f "$tmp"
+        ui_err "Permission denied."
+        return 1
+    fi
+    ui_ok "Legacy 'unixscripts' aliassen gemigreerd in $prof (eigen Python/Web regels behouden)."
 }
 
 alias_manager_menu() {
@@ -292,6 +364,7 @@ alias_manager_menu() {
         ui_item "3" "Wijzigen / Verwijderen"  "Op nummer (met .bak backup)"
         if os_is_qnap; then
             ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle QNAP files"
+            ui_item "5" "Legacy 'unixscripts' Migreren" "Vervang oude paden met .bak backup"
         fi
         ui_item "0" "Terug"                   ""
         printf "\n"
@@ -302,6 +375,7 @@ alias_manager_menu() {
             2) ui_run_safe "Presets Wizard" alias_presets_wizard ;;
             3) ui_run_safe "Alias Wijzigen/Verwijderen" alias_edit_or_delete ;;
             4) os_is_qnap && alias_select_profile ;;
+            5) os_is_qnap && ui_run_safe "Legacy Migratie" alias_migrate_unixscripts ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
