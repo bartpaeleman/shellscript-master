@@ -48,42 +48,43 @@ show_help() {
     printf "  ./scripter --persist              Configure OS-specific shell persistence\n"
     printf "  ./scripter -h | --help            Show this help message\n"
 
-    printf "\n%bAVAILABLE +SWITCHES:%b\n" "${YELLOW}${BOLD}" "${NC}"
+    printf "\n%bAVAILABLE +SWITCHES & SHORTCODES:%b\n" "${YELLOW}${BOLD}" "${NC}"
     printf "  %bDEVELOPMENT & OPS:%b\n" "${CYAN}" "${NC}"
-    printf "    +gitmaster (+git)         [UNI] Git Workflow Manager\n"
-    printf "    +containermaster          [UNI] Docker / Container Manager\n"
-    printf "    +dbmaster (+db)           [UNI] Database Tools\n"
-    printf "    +webmaster (+web)         [UNI] Web Scaffold Tools\n"
+    printf "    +gitmaster, +git, -g          [UNI] Git Workflow Manager\n"
+    printf "    +containermaster, +docker, -c [UNI] Docker / Container Manager\n"
+    printf "    +dbmaster, +db, -b            [UNI] Database Tools\n"
+    printf "    +webmaster, +web, -w          [UNI] Web Scaffold Tools\n"
 
     if [[ "$OS_TYPE" == "macOS" || "$OS_TYPE" == "QNAP" || "$SHOW_ALL" == "true" ]]; then
         printf "  %bSYSTEEMBEHEER:%b\n" "${CYAN}" "${NC}"
-        [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]] && printf "    +macmaster (+macsystem)   [MAC] macOS System Maintenance\n"
-        [[ "$OS_TYPE" == "QNAP"  || "$SHOW_ALL" == "true" ]] && printf "    +qnapmaster (+qnap)       [QNAP] Container, Share & Entware\n"
+        [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]] && printf "    +macmaster, +mac, -m          [MAC] macOS System Maintenance\n"
+        [[ "$OS_TYPE" == "QNAP"  || "$SHOW_ALL" == "true" ]] && printf "    +qnapmaster, +qnap, -q        [QNAP] Container, Share & Entware\n"
     fi
 
     printf "  %bBESTANDS- & DATABEHEER:%b\n" "${CYAN}" "${NC}"
-    printf "    +filemaster (+file)       [UNI] File Management Tools\n"
-    printf "    +datamaster (+data)       [UNI] Data Processing Tools\n"
-    printf "    +textmaster (+text)       [UNI] Text Processing Tools\n"
-    [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]] && printf "    +rename_ebooks (+ebooks)  [MAC] E-book Metadata Renamer\n"
+    printf "    +filemaster, +file, -f        [UNI] File Management Tools\n"
+    printf "    +datamaster, +data, -a        [UNI] Data Processing Tools\n"
+    printf "    +textmaster, +text, -t        [UNI] Text Processing Tools\n"
+    [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]] && printf "    +rename_ebooks, +ebooks, -e   [MAC] E-book Metadata Renamer\n"
 
     if [[ "$OS_TYPE" == "macOS" || "$SHOW_ALL" == "true" ]]; then
         printf "  %bNETWERK & CYBERSECURITY:%b\n" "${CYAN}" "${NC}"
-        printf "    +networkmaster (+net)     [MAC] Network Scanner & Tools\n"
-        printf "    +cybermaster (+cyber)     [MAC] Cybersecurity & Recon\n"
-        printf "    +intelmaster (+intel)     [MAC] Threat Intelligence\n"
+        printf "    +networkmaster, +net, -n      [MAC] Network Scanner & Tools\n"
+        printf "    +cybermaster, +cyber, -y      [MAC] Cybersecurity & Recon\n"
+        printf "    +intelmaster, +intel, -i      [MAC] Threat Intelligence\n"
         printf "  %bMEDIA & MULTIMEDIA:%b\n" "${CYAN}" "${NC}"
-        printf "    +audiomaster (+audio)     [MAC] Audio Processing & Tagging\n"
-        printf "    +videomaster (+video)     [MAC] Video Processing\n"
-        printf "    +imagemaster (+image)     [MAC] Image Batch Processing\n"
-        printf "    +karaokemaster (+karaoke) [MAC] Karaoke & CDG Tools\n"
+        printf "    +audiomaster, +audio, -u      [MAC] Audio Processing & Tagging\n"
+        printf "    +videomaster, +video, -v      [MAC] Video Processing\n"
+        printf "    +imagemaster, +img, -p        [MAC] Image Batch Processing\n"
+        printf "    +karaokemaster, +karaoke, -k  [MAC] Karaoke & CDG Tools\n"
     fi
 
     printf "  %bUTILITIES & ONDERHOUD:%b\n" "${YELLOW}" "${NC}"
-    printf "    +deps [status|install|update]   Dependency & Update Center\n"
-    printf "    --persist                       Make scripter persistent on this OS\n"
+    printf "    +deps [status|install|update]       Dependency & Update Center\n"
+    printf "    --persist                           Make scripter persistent on this OS\n"
+    printf "\n  %bVoorbeelden:%b ./scripter -g status | ./scripter -c ls | ./scripter -f rename --help\n" "${DIM}" "${NC}"
     if [[ "$SHOW_ALL" == "false" ]]; then
-        printf "\n  %bTip: gebruik 'scripter --all' om alle platformmodules te tonen.%b\n" "${DIM}" "${NC}"
+        printf "  %bTip: gebruik 'scripter --all' om alle platformmodules te tonen.%b\n" "${DIM}" "${NC}"
     fi
     printf "\n"
 }
@@ -125,6 +126,7 @@ route_module() {
     shift || true
     local mod="${raw#+}"
     mod="${mod#--}"
+    mod="${mod#-}"
 
     case "$mod" in
         deps|dep)
@@ -136,14 +138,14 @@ route_module() {
                 *)            ui_err "Usage: scripter +deps {status|install|update|menu}"; exit 1 ;;
             esac
             ;;
-        gitmaster|git)             _resolve_common "git" "$@" ;;
-        containermaster|container) _resolve_common "container" "$@" ;;
-        dbmaster|db)               _resolve_common "db" "$@" ;;
-        datamaster|data)           _resolve_common "data" "$@" ;;
-        textmaster|text)           _resolve_common "text" "$@" ;;
-        filemaster|file)           _resolve_common "file" "$@" ;;
-        webmaster|web)             _resolve_common "web" "$@" ;;
-        macmaster|macsystem|mac)
+        gitmaster|git|g)               _resolve_common "git" "$@" ;;
+        containermaster|container|docker|cnt|c) _resolve_common "container" "$@" ;;
+        dbmaster|db|b)                 _resolve_common "db" "$@" ;;
+        datamaster|data|a)             _resolve_common "data" "$@" ;;
+        textmaster|text|t)             _resolve_common "text" "$@" ;;
+        filemaster|file|f)             _resolve_common "file" "$@" ;;
+        webmaster|web|w)               _resolve_common "web" "$@" ;;
+        macmaster|macsystem|mac|m)
             if [[ -z "${1:-}" ]]; then
                 _run_tool "$ROOT_DIR/modules/macos/macsystem/macmanager.sh"
             else
@@ -151,15 +153,15 @@ route_module() {
                 _run_tool "$ROOT_DIR/modules/macos/macsystem/${sub%.sh}.sh" "$@"
             fi
             ;;
-        networkmaster|net)         _run_tool "$ROOT_DIR/modules/macos/security/networkmaster" "$@" ;;
-        cybermaster|cyber)         _run_tool "$ROOT_DIR/modules/macos/security/cybermaster" "$@" ;;
-        intelmaster|intel)         _run_tool "$ROOT_DIR/modules/macos/security/intelmaster" "$@" ;;
-        audiomaster|audio)         _run_tool "$ROOT_DIR/modules/macos/media/audiomaster" "$@" ;;
-        videomaster|video)         _run_tool "$ROOT_DIR/modules/macos/media/videomaster" "$@" ;;
-        imagemaster|image)         _run_tool "$ROOT_DIR/modules/macos/media/imagemaster" "$@" ;;
-        karaokemaster|karaoke)     _run_tool "$ROOT_DIR/modules/macos/media/karaokemaster" "$@" ;;
-        rename_ebooks|ebooks)      _run_tool "$ROOT_DIR/modules/macos/media/rename_ebooks" "$@" ;;
-        qnap|qnapmaster)
+        networkmaster|net|n)           _run_tool "$ROOT_DIR/modules/macos/security/networkmaster" "$@" ;;
+        cybermaster|cyber|y)           _run_tool "$ROOT_DIR/modules/macos/security/cybermaster" "$@" ;;
+        intelmaster|intel|i)           _run_tool "$ROOT_DIR/modules/macos/security/intelmaster" "$@" ;;
+        audiomaster|audio|u)           _run_tool "$ROOT_DIR/modules/macos/media/audiomaster" "$@" ;;
+        videomaster|video|v)           _run_tool "$ROOT_DIR/modules/macos/media/videomaster" "$@" ;;
+        imagemaster|image|img|p)       _run_tool "$ROOT_DIR/modules/macos/media/imagemaster" "$@" ;;
+        karaokemaster|karaoke|k)       _run_tool "$ROOT_DIR/modules/macos/media/karaokemaster" "$@" ;;
+        rename_ebooks|ebooks|e)        _run_tool "$ROOT_DIR/modules/macos/media/rename_ebooks" "$@" ;;
+        qnap|qnapmaster|q)
             if [[ "$OS_TYPE" != "QNAP" && "$FORCE_RUN" != "true" ]]; then
                 ui_warn "Module 'qnapmaster' is alleen beschikbaar op QNAP/Linux (huidig OS: $OS_TYPE). Gebruik --force om toch uit te voeren."
                 return 1
@@ -301,7 +303,7 @@ case "${ARGS[0]}" in
         persist_system
         exit 0
         ;;
-    +*|--*)
+    +*|--*|-*)
         route_module "${ARGS[@]}"
         ;;
     *)

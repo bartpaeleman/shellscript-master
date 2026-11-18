@@ -238,17 +238,17 @@ container_menu() {
 }
 
 case "${1:-menu}" in
-    -h|--help|help) show_help ;;
-    list|ps|status) opt_list ;;
-    logs)           shift; opt_logs "${1:-}" ;;
-    inspect)        shift; opt_inspect "${1:-}" ;;
-    start)          shift; opt_start "${1:-}" ;;
-    stop)           shift; opt_stop "${1:-}" ;;
-    restart)        shift; opt_restart "${1:-}" ;;
-    shell|exec)     shift; opt_shell "${1:-}" ;;
-    create|stack)   opt_create ;;
-    rm)             shift; opt_rm "${1:-}" ;;
-    prune)          opt_prune ;;
-    menu)           container_menu ;;
-    *)              ui_err "Unknown subcommand: $1"; show_help; exit 1 ;;
+    -h|--help|help)      show_help ;;
+    list|ls|ps|status)   opt_list ;;
+    logs|lg)             shift; opt_logs "${1:-}" ;;
+    inspect|in)          shift; opt_inspect "${1:-}" ;;
+    start)               shift; opt_start "${1:-}" ;;
+    stop)                shift; opt_stop "${1:-}" ;;
+    restart|rs)          shift; opt_restart "${1:-}" ;;
+    shell|sh|exec)       shift; opt_shell "${1:-}" ;;
+    create|stack)        opt_create ;;
+    rm)                  shift; opt_rm "${1:-}" ;;
+    cleanup|prune)       opt_prune ;;
+    menu)                container_menu ;;
+    *)                   ui_err "Unknown subcommand: $1"; show_help; exit 1 ;;
 esac

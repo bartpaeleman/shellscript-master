@@ -414,30 +414,30 @@ git_menu() {
 }
 
 case "${1:-menu}" in
-    -h|--help|help) show_help ;;
-    status|st)      opt_status ;;
-    diff)           opt_diff ;;
-    log|tree)       opt_tree ;;
-    compare)        opt_compare ;;
-    start)          opt_start_branch ;;
-    checkout|co)    opt_checkout ;;
-    commit|push)    opt_quick_commit_push ;;
-    sync|pull)      opt_sync_pull ;;
-    squash)         opt_squash ;;
-    uat)            opt_prepare_uat ;;
-    merge-fix)      opt_merge_fix ;;
-    tag)            opt_release_tag ;;
-    prune)          opt_prune ;;
-    delete-branch)  opt_delete_branch ;;
-    backup)         opt_backup ;;
-    restore-backup) opt_restore_backup ;;
-    stash-pull)     opt_stash_pull_pop ;;
-    undo)           opt_undo_last ;;
-    revert)         opt_revert_commit ;;
-    force-sync)     opt_force_sync ;;
-    recover)        opt_emergency_recovery ;;
-    untrack)        opt_untrack ;;
-    config)         opt_config ;;
-    menu)           git_menu ;;
-    *)              ui_err "Unknown subcommand: $1"; show_help; exit 1 ;;
+    -h|--help|help)          show_help ;;
+    status|st)               opt_status ;;
+    diff|df)                 opt_diff ;;
+    history|log|tree)        opt_tree ;;
+    compare)                 opt_compare ;;
+    start)                   opt_start_branch ;;
+    switch|sw|checkout|co)   opt_checkout ;;
+    commit|ci|push)          opt_quick_commit_push ;;
+    sync|pull)               opt_sync_pull ;;
+    squash|sq)               opt_squash ;;
+    uat)                     opt_prepare_uat ;;
+    merge-fix)               opt_merge_fix ;;
+    tag)                     opt_release_tag ;;
+    prune|pr)                opt_prune ;;
+    delete-branch)           opt_delete_branch ;;
+    backup|bak)              opt_backup ;;
+    restore|rst|restore-backup) opt_restore_backup ;;
+    stash-pull)              opt_stash_pull_pop ;;
+    undo)                    opt_undo_last ;;
+    revert)                  opt_revert_commit ;;
+    force-sync)              opt_force_sync ;;
+    recover)                 opt_emergency_recovery ;;
+    untrack)                 opt_untrack ;;
+    config)                  opt_config ;;
+    menu)                    git_menu ;;
+    *)                       ui_err "Unknown subcommand: $1"; show_help; exit 1 ;;
 esac

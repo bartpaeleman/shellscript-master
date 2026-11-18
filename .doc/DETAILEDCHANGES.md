@@ -62,3 +62,8 @@
 ### OS-Scoped Dependency Filtering (`.core/deps.sh` & `.core/os_detect.sh`)
 - Split dependencies into `COMMON_DEPS`, `MACOS_DEPS`, `QNAP_DEPS` (and `COMMON_PYTHON_DEPS` / `MACOS_PYTHON_DEPS`); `QNAP`/`Linux` now skip `MACOS_DEPS` unless `--all` is set.
 - Added `/opt/bin:/opt/sbin` to `PATH` on QNAP for Entware (`opkg`) detection, `.dep/.venv/bin/pip` support, and clean `[INFO]` message when `opkg` is absent.
+
+### Shortcodes & Complete `README.md` (`scripter`, `gitmaster`, `containermaster`, `README.md`)
+- Added conflict-free shortcodes (`-g`, `-c`, `-b`, `-w`, `-m`, `-q`, `-f`, `-a`, `-t`, `-e`, `-n`, `-y`, `-i`, `-u`, `-v`, `-p`, `-k`) and `+switches` to `scripter` and `show_help()`.
+- Added short subcommand aliases in `gitmaster.sh` (`st`, `df`, `sw`, `ci`, `sq`, `pr`, `bak`, `rst`) and `containermaster.sh` (`ls`, `lg`, `in`, `rs`, `sh`, `cleanup`).
+- Rewrote `README.md` as a complete user manual for `shellscript-master`.
