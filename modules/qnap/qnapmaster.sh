@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 # shellcheck source=.core/os_detect.sh
 [[ -z "${OS_TYPE:-}" ]] && source "$ROOT_DIR/.core/os_detect.sh"
+source "$ROOT_DIR/.core/ui.sh"
 
 qnap_container_status() {
     echo "=== QNAP Container Station Status ==="
@@ -47,19 +48,20 @@ qnap_entware_update() {
 
 qnap_menu() {
     while true; do
-        echo ""
-        echo "=== QNAP Master ($OS_TYPE) ==="
-        echo "1) Container Station status"
-        echo "2) Share cleanup (@Recycle / .@__thumb)"
-        echo "3) Entware (opkg) update & upgrade"
-        echo "0) Back"
+        ui_clear_screen
+        ui_header "QNAP MASTER" "System : ${CYAN}${OS_TYPE}${NC}"
+        ui_item "1" "Container Station status" "docker / system-docker ps"
+        ui_item "2" "Share cleanup"            "@Recycle / .@__thumb"
+        ui_item "3" "Entware update"           "opkg update && opkg upgrade"
+        ui_item "0" "Terug"                    ""
+        printf "\n"
         read -rp "Choice: " choice
         case "$choice" in
-            1) qnap_container_status ;;
-            2) qnap_share_cleanup ;;
-            3) qnap_entware_update ;;
+            1) ui_run_safe "Container Station status" qnap_container_status ;;
+            2) ui_run_safe "QNAP Share cleanup" qnap_share_cleanup ;;
+            3) ui_run_safe "Entware update" qnap_entware_update ;;
             0|q|Q) break ;;
-            *) echo "Invalid choice." ;;
+            *) ui_warn "Invalid choice."; ui_pause ;;
         esac
     done
 }
