@@ -3,7 +3,7 @@
 
 CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$CORE_DIR/.." && pwd)"
-[[ -z "${OS_TYPE:-}" ]] && source "$CORE_DIR/os_detect.sh"
+declare -F os_is_macos >/dev/null 2>&1 || source "$CORE_DIR/os_detect.sh"
 [[ -z "${UI_LINE:-}" ]] && source "$CORE_DIR/ui.sh"
 
 _alias_profile() {

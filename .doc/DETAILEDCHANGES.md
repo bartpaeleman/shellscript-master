@@ -76,3 +76,6 @@
 - Added `.core/aliases.sh` managing `# >>> scripter-aliases >>>` blocks with `.bak` backups, numbered listing/editing/deletion, and `read -e` Tab path-autocomplete.
 - Added Presets Wizard: Webserver `prd`/`dev`/`tst` (`/share/Web` on QNAP, `~/Sites` on macOS), `pyvenv` (`.dep/.venv/bin/activate`), and macOS shortcuts (`flushdns`, `showfiles`, `hidefiles`, `brewup`).
 - Integrated via `./scripter -q aliases` and `./scripter -m aliases`.
+
+### Fix `os_is_macos: command not found` on QNAP (`.core/aliases.sh`)
+- Changed `.core/aliases.sh` to check `declare -F os_is_macos` before sourcing `.core/os_detect.sh`, ensuring OS helper functions are always loaded even when `OS_TYPE` is already exported.
