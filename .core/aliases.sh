@@ -154,7 +154,22 @@ alias_presets_wizard() {
             _alias_upsert "$prof" "tst" "cd \"${p_tst}\" && ls -la"
             ;;
         2)
-            _alias_upsert "$prof" "pyvenv" "source \"${ROOT_DIR}/.dep/.venv/bin/activate\""
+            if os_is_qnap; then
+                local def_py; def_py="$(command -v python3 2>/dev/null || echo "/share/CACHEDEV1_DATA/.samba_python3/Python3/bin/python3")"
+                local py_path=""
+                read -e -p "QNAP python3 path [$def_py] (Enter=default, 0=cancel): " py_path
+                [[ "$py_path" == "0" ]] && { ui_cancel_msg; return 0; }
+                py_path="${py_path:-$def_py}"
+                local py_dir; py_dir="$(dirname "$py_path")"
+                _alias_upsert "$prof" "python3" "$py_path"
+                _alias_upsert "$prof" "pyvenv" "source \"${ROOT_DIR}/.dep/.venv/bin/activate\""
+                if ! grep -q "export PATH=\"${py_dir}:\$PATH\"" "$prof" 2>/dev/null; then
+                    printf "\nexport PATH=\"%s:\$PATH\"\n" "$py_dir" >> "$prof"
+                    ui_ok "Added export PATH=\"${py_dir}:\$PATH\" to $prof"
+                fi
+            else
+                _alias_upsert "$prof" "pyvenv" "source \"${ROOT_DIR}/.dep/.venv/bin/activate\""
+            fi
             ;;
         3)
             _alias_upsert "$prof" "scripter" "${ROOT_DIR}/scripter"
@@ -204,6 +219,14 @@ alias_add_custom() {
     if [[ -d "$cmd" ]]; then
         if ui_confirm_action "'$cmd' is a directory. Navigate with 'cd \"$cmd\" && ls -la'?"; then
             cmd="cd \"${cmd}\" && ls -la"
+        fi
+    fi
+    if [[ "$name" == "python3" ]]; then
+        local py_dir; py_dir="$(dirname "$cmd")"
+        ui_info "Let op: een alias voor 'python3' werkt niet in subshells/scripts."
+        if ui_confirm_action "Ook 'export PATH=\"${py_dir}:\$PATH\"' toevoegen aan $prof?"; then
+            printf "\nexport PATH=\"%s:\$PATH\"\n" "$py_dir" >> "$prof"
+            ui_ok "Added export PATH=\"${py_dir}:\$PATH\" to $prof"
         fi
     fi
     _alias_upsert "$prof" "$name" "$cmd"

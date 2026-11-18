@@ -97,3 +97,7 @@
 
 ### `AGENTS.md` Architecture & QNAP Standards Update
 - Documented functional menu grouping, dynamic numbering, shortcodes (`-x`), `Enter = 0` (`ui_read_menu_choice`), `ui_run_safe`, and QNAP/BusyBox compatibility & persistence rules in `AGENTS.md`.
+
+### QNAP Python 3 Auto-Detection & Alias Preset (`.core/os_detect.sh`, `.core/aliases.sh`)
+- Added `os_detect_qnap_python()` in `.core/os_detect.sh` to automatically prepend `.samba_python3`, QPKG Python3, or `/opt/bin` to `PATH` on QNAP.
+- Updated `Python Venv Preset` and `alias_add_custom` in `.core/aliases.sh` to configure `export PATH` alongside `alias python3` on QNAP.
