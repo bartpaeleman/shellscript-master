@@ -78,3 +78,36 @@ ui_ok()   { printf "%b[OK]%b %s\n" "${GREEN}" "${NC}" "$*"; }
 ui_warn() { printf "%b[WARN]%b %s\n" "${YELLOW}" "${NC}" "$*"; }
 ui_err()  { printf "%b[ERR]%b %s\n" "${RED}" "${NC}" "$*"; }
 ui_info() { printf "%b[INFO]%b %s\n" "${CYAN}" "${NC}" "$*"; }
+
+ui_cancel_msg() {
+    printf "%b[Cancelled]%b Geen wijzigingen uitgevoerd.\n" "${YELLOW}" "${NC}"
+}
+
+ui_prompt_input() {
+    local __var_name="$1"
+    local __prompt="$2"
+    local __default="${3:-}"
+    local __val=""
+    read -rp "${__prompt} (typ '0' of 'q' om te annuleren): " __val
+    case "$__val" in
+        0|q|Q|cancel|CANCEL)
+            ui_cancel_msg
+            return 1
+            ;;
+        "")
+            __val="$__default"
+            ;;
+    esac
+    printf -v "$__var_name" '%s' "$__val"
+    return 0
+}
+
+ui_confirm_action() {
+    local __prompt="$1"
+    local __ans=""
+    read -rp "${__prompt} [y/N] (of '0'/'q' om te annuleren): " __ans
+    case "$__ans" in
+        y|Y|yes|YES) return 0 ;;
+        *) ui_cancel_msg; return 1 ;;
+    esac
+}

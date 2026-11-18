@@ -90,18 +90,19 @@ opt_compare() {
 opt_start_branch() {
     _require_repo || return 1
     ui_section "START FEATURE / AI BRANCH"
-    echo "Types: 1) feature/  2) fix/  3) ai/  4) refactor/"
-    read -rp "Select type [1-4]: " t
+    echo "  1) feature/  2) fix/  3) ai/  4) refactor/  0) Cancel / Terug"
+    local t=""
+    ui_prompt_input t "Select type [1-4]" "1" || return 0
     local prefix="feature/"
     case "$t" in
         2) prefix="fix/" ;;
         3) prefix="ai/" ;;
         4) prefix="refactor/" ;;
     esac
-    read -rp "Branch name (without prefix): " bname
-    [[ -z "$bname" ]] && { ui_warn "Aborted."; return 1; }
-    read -rp "Sync main first? [y/N]: " sync_m
-    if [[ "$sync_m" =~ ^[Yy]$ ]]; then
+    local bname=""
+    ui_prompt_input bname "Branch name (without prefix)" || return 0
+    [[ -z "$bname" ]] && { ui_cancel_msg; return 0; }
+    if ui_confirm_action "Sync main first?"; then
         git checkout main 2>/dev/null && git pull --rebase origin main 2>/dev/null || true
     fi
     git checkout -b "${prefix}${bname}"
@@ -112,10 +113,12 @@ opt_checkout() {
     git fetch --all --quiet 2>/dev/null || true
     local target=""
     if command -v fzf >/dev/null 2>&1; then
-        target="$(git branch -a | sed 's/^[* ]*//' | grep -v 'HEAD' | fzf --prompt="Checkout branch: ")"
+        target="$(git branch -a | sed 's/^[* ]*//' | grep -v 'HEAD' | fzf --prompt="Checkout branch (Esc to cancel): ")"
+        [[ -z "$target" ]] && { ui_cancel_msg; return 0; }
     else
         local branches=()
         local i=1
+        echo "   0) Cancel / Terug"
         while IFS= read -r b; do
             b="${b#\* }"; b="${b#  }"
             [[ -z "$b" || "$b" == *"->"* ]] && continue
@@ -123,12 +126,14 @@ opt_checkout() {
             printf "  %2d) %s\n" "$i" "$b"
             ((i++))
         done < <(git branch -a)
-        read -rp "Select number: " num
+        local num=""
+        ui_prompt_input num "Select number" || return 0
         if [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 1 && "$num" -le ${#branches[@]} ]]; then
             target="${branches[$((num-1))]}"
+        else
+            ui_cancel_msg; return 0
         fi
     fi
-    [[ -z "$target" ]] && return 0
     if [[ "$target" == remotes/origin/* ]]; then
         local local_b="${target#remotes/origin/}"
         git checkout -b "$local_b" "$target" 2>/dev/null || git checkout "$local_b"
@@ -141,54 +146,71 @@ opt_quick_commit_push() {
     _require_repo || return 1
     ui_section "CHANGED FILES PREVIEW"
     git status -s
-    read -rp "Stage all & commit? [y/N]: " ans
-    [[ ! "$ans" =~ ^[Yy]$ ]] && return 0
-    read -rp "Commit message: " msg
-    [[ -z "$msg" ]] && { ui_warn "Empty message, aborted."; return 1; }
+    ui_confirm_action "Stage all & commit?" || return 0
+    local msg=""
+    ui_prompt_input msg "Commit message" || return 0
+    [[ -z "$msg" ]] && { ui_cancel_msg; return 0; }
     git add . && git commit -m "$msg" && git push -u origin "$(_current_branch)"
 }
 
 opt_sync_pull() {
     _require_repo || return 1
-    read -rp "Use rebase (r) or merge (m)? [r/m]: " mode
-    if [[ "$mode" == "m" || "$mode" == "M" ]]; then
-        git pull origin "$(_current_branch)"
-    else
-        git pull --rebase origin "$(_current_branch)"
-    fi
+    ui_section "SYNC / PULL"
+    echo "  1) Standard Pull (Merge / Fast-Forward — standaard 'git pull' gedrag) [Default]"
+    echo "  2) Rebase Pull (Zet jouw lokale commits bovenop de laatste remote wijzigingen — lineaire historie)"
+    echo "  0) Cancel / Terug naar menu"
+    local mode=""
+    read -rp "Choice [1/2/0, Enter=1]: " mode
+    case "${mode:-1}" in
+        0|q|Q|c|cancel)
+            ui_cancel_msg
+            return 0
+            ;;
+        2)
+            git pull --rebase origin "$(_current_branch)"
+            ;;
+        1|"")
+            git pull origin "$(_current_branch)"
+            ;;
+        *)
+            ui_warn "Invalid choice."
+            ui_cancel_msg
+            return 0
+            ;;
+    esac
 }
 
 opt_squash() {
     _require_repo || return 1
     local br; br="$(_current_branch)"
     [[ "$br" == "main" || "$br" == "master" ]] && { ui_err "Cannot squash main/master directly."; return 1; }
-    read -rp "Base branch to squash against [main]: " base
-    base="${base:-main}"
+    local base=""
+    ui_prompt_input base "Base branch to squash against [main]" "main" || return 0
     local merge_base; merge_base="$(git merge-base "$base" HEAD 2>/dev/null || true)"
     [[ -z "$merge_base" ]] && { ui_err "Could not find merge-base with $base."; return 1; }
-    read -rp "Squash commit message: " msg
-    [[ -z "$msg" ]] && { ui_warn "Empty message, aborted."; return 1; }
+    local msg=""
+    ui_prompt_input msg "Squash commit message" || return 0
+    [[ -z "$msg" ]] && { ui_cancel_msg; return 0; }
     git reset --soft "$merge_base" && git commit -m "$msg"
 }
 
 opt_prepare_uat() {
     _require_repo || return 1
     local src; src="$(_current_branch)"
-    read -rp "Target staging branch [uat]: " tgt
-    tgt="${tgt:-uat}"
-    read -rp "Merge '$src' into '$tgt'? [y/N]: " ans
-    [[ ! "$ans" =~ ^[Yy]$ ]] && return 0
+    local tgt=""
+    ui_prompt_input tgt "Target staging branch [uat]" "uat" || return 0
+    ui_confirm_action "Merge '$src' into '$tgt'?" || return 0
     git checkout "$tgt" && git merge "$src"
 }
 
 opt_merge_fix() {
     _require_repo || return 1
     local cur; cur="$(_current_branch)"
-    read -rp "Fix branch to merge into '$cur' (e.g. fix/bug): " fix_b
-    [[ -z "$fix_b" ]] && return 0
+    local fix_b=""
+    ui_prompt_input fix_b "Fix branch to merge into '$cur' (e.g. fix/bug)" || return 0
+    [[ -z "$fix_b" ]] && { ui_cancel_msg; return 0; }
     git merge "$fix_b" || return 1
-    read -rp "Delete '$fix_b' locally and on origin? [y/N]: " del
-    if [[ "$del" =~ ^[Yy]$ ]]; then
+    if ui_confirm_action "Delete '$fix_b' locally and on origin?"; then
         git branch -d "$fix_b" 2>/dev/null || git branch -D "$fix_b"
         git push origin --delete "$fix_b" 2>/dev/null || true
     fi
@@ -196,10 +218,12 @@ opt_merge_fix() {
 
 opt_release_tag() {
     _require_repo || return 1
-    read -rp "Tag version (e.g. v1.2.0): " tag
-    [[ -z "$tag" ]] && return 0
-    read -rp "Tag message [Release $tag]: " msg
-    git tag -a "$tag" -m "${msg:-Release $tag}" && git push origin --tags
+    local tag=""
+    ui_prompt_input tag "Tag version (e.g. v1.2.0)" || return 0
+    [[ -z "$tag" ]] && { ui_cancel_msg; return 0; }
+    local msg=""
+    ui_prompt_input msg "Tag message [Release $tag]" "Release $tag" || return 0
+    git tag -a "$tag" -m "$msg" && git push origin --tags
 }
 
 # --- CATEGORIE C: CLEANUP & MAINTENANCE ---
@@ -223,16 +247,19 @@ opt_prune() {
 opt_delete_branch() {
     _require_repo || return 1
     local cur; cur="$(_current_branch)"
+    echo "  0) Cancel / Terug"
     git branch
-    read -rp "Branch to delete: " b
-    [[ -z "$b" ]] && return 0
+    local b=""
+    ui_prompt_input b "Branch to delete" || return 0
+    [[ -z "$b" ]] && { ui_cancel_msg; return 0; }
     if [[ "$b" == "main" || "$b" == "master" || "$b" == "$cur" ]]; then
         ui_err "Refusing to delete protected/active branch '$b' without manual override."
         return 1
     fi
-    git branch -d "$b" || { read -rp "Not merged. Force delete (-D)? [y/N]: " f; [[ "$f" =~ ^[Yy]$ ]] && git branch -D "$b"; }
-    read -rp "Also delete on origin? [y/N]: " rem
-    [[ "$rem" =~ ^[Yy]$ ]] && git push origin --delete "$b" 2>/dev/null || true
+    git branch -d "$b" || { ui_confirm_action "Not merged. Force delete (-D)?" && git branch -D "$b"; }
+    if ui_confirm_action "Also delete on origin?"; then
+        git push origin --delete "$b" 2>/dev/null || true
+    fi
 }
 
 opt_backup() {
@@ -273,12 +300,15 @@ opt_force_sync() {
     _require_repo || return 1
     local br; br="$(_current_branch)"
     printf "%b[WARNING] Destructive operation!%b\n" "${RED}${BOLD}" "${NC}"
-    echo "1) Overwrite LOCAL with origin/$br (git reset --hard)"
-    echo "2) Force push LOCAL to origin/$br (--force-with-lease)"
-    read -rp "Choice [1/2]: " c
+    echo "  1) Overwrite LOCAL with origin/$br (git reset --hard)"
+    echo "  2) Force push LOCAL to origin/$br (--force-with-lease)"
+    echo "  0) Cancel / Terug"
+    local c=""
+    ui_prompt_input c "Choice [1/2]" || return 0
     case "$c" in
-        1) git fetch origin && git reset --hard "origin/$br" ;;
-        2) git push --force-with-lease origin "$br" ;;
+        1) ui_confirm_action "Overwrite local '$br' with origin/$br?" && git fetch origin && git reset --hard "origin/$br" ;;
+        2) ui_confirm_action "Force push (--force-with-lease) to origin/$br?" && git push --force-with-lease origin "$br" ;;
+        *) ui_cancel_msg ;;
     esac
 }
 

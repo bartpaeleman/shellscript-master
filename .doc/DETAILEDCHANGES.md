@@ -40,3 +40,8 @@
 ### Strict OS Filtering (`scripter`)
 - Filtered `interactive_menu()` and `show_help()` by `OS_TYPE` (`macOS` hides QNAP, `QNAP` hides macOS, `Linux` hides both) with `--all` override.
 - Added `--force` guard for OS-mismatched CLI calls (e.g. `./scripter +qnapmaster` on macOS).
+
+### Safe Prompts & Sync/Pull UX (`.core/ui.sh` & `gitmaster`)
+- Added `ui_cancel_msg()`, `ui_prompt_input()`, and `ui_confirm_action()` to `.core/ui.sh` with universal `0`/`q`/`cancel` escape.
+- Updated `gitmaster` Option 8 (`Sync / Pull`) with clear Standard Pull `[Default]` vs Rebase Pull descriptions and `0) Cancel`.
+- Updated `gitmaster` interactive prompts and branch lists with `0) Cancel / Terug` and `[Cancelled] Geen wijzigingen uitgevoerd.`.
