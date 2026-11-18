@@ -87,3 +87,6 @@
 ### QNAP Target Profile Selector & Legacy Alias Support (`.core/aliases.sh`)
 - Added `alias_select_profile` and `alias_scan_all_qnap` for QNAP (`/share/homes/<user>/.profile`, `/root/.profile`, `/root/.bashrc`, `/etc/profile`, `/opt/etc/profile`).
 - Updated `_alias_read_list` to include standalone legacy `alias ` lines and `_alias_write_list` to handle `sudo` + `.bak` backups + `[VOLATILE RAM]` warnings.
+
+### QNAP Persistence Scanner Alignment (`modules/qnap/qnapmaster.sh`)
+- Aligned `qnap_persistence_scan` and `_qnap_file_actions` with `Enter = 0` (`ui_read_menu_choice`) and added `scriptmaster` / `# >>> scripter >>>` cleanup support.

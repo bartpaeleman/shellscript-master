@@ -78,7 +78,8 @@ _qnap_file_actions() {
         ui_item "3" "Verwijder scripter-blok"      "Veilige opschoning + backup"
         ui_item "0" "Terug"                        ""
         printf "\n"
-        read -rp "Choice: " act
+        local act=""
+        ui_read_menu_choice act "Choice"
         case "$act" in
             1)
                 _qnap_backup_file "$target" || { ui_pause; continue; }
@@ -94,17 +95,17 @@ _qnap_file_actions() {
                 ;;
             2)
                 ui_section "SCRIPTER REGELS IN $target"
-                grep -n -E "scripter|SCRIPTER_HOME" "$target" 2>/dev/null || ui_info "Geen scripter-regels gevonden."
+                grep -n -E "scripter|SCRIPTER_HOME|scriptmaster" "$target" 2>/dev/null || ui_info "Geen scripter-regels gevonden."
                 ui_pause
                 ;;
             3)
-                if ui_confirm_action "Verwijder scripter-hub blok uit $target?"; then
+                if ui_confirm_action "Verwijder scripter/scriptmaster blok uit $target?"; then
                     _qnap_backup_file "$target" || { ui_pause; continue; }
                     local tmp; tmp="$(mktemp)"
                     awk '
-                        /# >>> scripter-hub >>>/ { skip=1; next }
-                        /# <<< scripter-hub <<</ { skip=0; next }
-                        !skip { print }
+                        /# >>> scripter(-hub)? >>>/ { skip=1; next }
+                        /# <<< scripter(-hub)? <<</ { skip=0; next }
+                        !skip && $0 !~ /scriptmaster/ { print }
                     ' "$target" > "$tmp"
                     if [[ -w "$target" ]]; then
                         mv "$tmp" "$target"
@@ -148,7 +149,7 @@ qnap_persistence_scan() {
     local entry ptype ppath found_tag perm_tag
     for entry in "${candidates[@]}"; do
         IFS='|' read -r ptype ppath <<< "$entry"
-        if [[ -L "$ppath" ]] || grep -q -E "scripter|SCRIPTER_HOME" "$ppath" 2>/dev/null; then
+        if [[ -L "$ppath" ]] || grep -q -E "scripter|SCRIPTER_HOME|scriptmaster" "$ppath" 2>/dev/null; then
             found_tag="${GREEN}[GEVONDEN]${NC}"
         else
             found_tag="${DIM}[LEEG]${NC}"
