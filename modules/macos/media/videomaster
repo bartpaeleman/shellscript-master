@@ -960,7 +960,7 @@ while true; do
     echo "8) Combineer MP4 Video met MP3 Audio (combineAV)"
     echo -e "-----------------------------------"
     echo "9) Update Afhankelijkheden (yt-dlp/ffmpeg)"
-    echo "X) Exit"
+    echo "0) Terug"
     echo ""
 
     read -p "Maak uw keuze: " choice
@@ -1004,7 +1004,7 @@ while true; do
             pause
             ;;
         9) update_dependencies ;;
-        [xX]) clear; exit 0 ;;
+        0|[xX]|[qQ]) clear; exit 0 ;;
         *) echo -e "${RED}Ongeldige keuze.${NC}" ; pause ;;
     esac
 done

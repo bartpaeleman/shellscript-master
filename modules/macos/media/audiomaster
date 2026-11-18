@@ -40,10 +40,10 @@ while true; do
     echo "1) fixaac"
     echo "2) mp3tag_manager"
     echo "3) convert_audio"
-    echo -e "\n${YELLOW}X) Exit${NC}"
+    echo -e "\n${YELLOW}0) Terug${NC}"
     echo -e "${CYAN}================================================${NC}"
 
-    read -e -p "Select action: " choice
+    read -e -p "Select action [0]: " choice; choice="${choice:-0}"
 
     case "$choice" in
         1)
@@ -58,7 +58,7 @@ while true; do
         3)
             "$AUDIO_DIR/convert_audio.sh"
             ;;
-        [xX])
+        0|[xX]|[qQ])
             echo -e "${GREEN}Exiting...${NC}"
             clear
             break

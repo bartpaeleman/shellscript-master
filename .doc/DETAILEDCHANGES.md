@@ -112,3 +112,9 @@
 
 ### `gitmaster` Local & Remote Branch Checkout (`modules/common/git/gitmaster.sh`)
 - Updated `opt_checkout` to run `git fetch --all --prune`, deduplicate local & `origin/*` branches with `[LOKAAL]` / `[REMOTE - origin]` tags, and support `Enter = 0` (`ui_read_menu_choice`).
+- Added Option 24 `opt_merge_to_main` (`merge-main`): pre-flight dirty-tree stash check, merge `--no-ff` into `main`/`master` with optional `origin/main` push, conflict abort guard, and safe `git branch -d` / `origin` cleanup.
+
+### System-Wide UI & Navigation Audit (`.core/deps.sh`, `scripter`, `modules/`)
+- Upgraded `deps_menu` (`D) Dependency Center`) in `.core/deps.sh` to `.core/ui.sh` (`ui_clear_screen`, `ui_header`, `ui_item`, `ui_read_menu_choice` with `Enter = 0`, `ui_run_safe`, `0) Terug`).
+- Verified `bash -n`, `python3 -m py_compile`, `./scripter --all --help`, `OS_TYPE=QNAP ./scripter --help`, and `Enter = 0` across `P`, `D`, `H`, and all hub-managed modules.
+- Standardized `0) Terug` and `Enter = 0` across `cybermaster`, `audiomaster`, `videomaster`, `imagemaster`, `karaokemaster`, and `VIDEO/video-master.sh` (zero `X)`/`q)`/`b)` exit options remaining).

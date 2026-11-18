@@ -82,10 +82,10 @@ run_interactive() {
         echo "5) Recon Domain/IP and Generate PDF Report"
         echo "6) Run geotrace"
         echo "7) Run recon"
-        echo -e "\n${YELLOW}X) Exit${NC}"
+        echo -e "\n${YELLOW}0) Terug${NC}"
         echo -e "${CYAN}================================================${NC}"
 
-        read -p "Select action: " choice
+        read -p "Select action [0]: " choice; choice="${choice:-0}"
 
         case "$choice" in
             1)
@@ -113,7 +113,7 @@ run_interactive() {
                 eval "$CYBER_MASTER_DIR/recon $args"
                 pause
                 ;;
-            [xX])
+            0|[xX]|[qQ])
                 echo -e "${GREEN}Exiting...${NC}"
                 clear
                 exit 0

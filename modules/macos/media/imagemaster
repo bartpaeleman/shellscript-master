@@ -151,7 +151,7 @@ convert_images() {
         echo -e "-----------------------------------"
         echo -e " ${GREEN}9) START CONVERSION${NC}"
         echo -e " 0) Back to Main Menu"
-        echo -e " X) Exit"
+        echo -e " 0) Terug"
         echo ""
 
         read -p "Choose an option to edit or Start (9) [ENTER=Start]: " choice
@@ -203,7 +203,7 @@ convert_images() {
             0)
                 break
                 ;;
-            [xX])
+            0|[xX]|[qQ])
                 clear
                 exit 0
                 ;;
@@ -331,14 +331,14 @@ while true; do
     echo "1) Convert Image(s) (Format, Resize, Color)"
     echo "2) Update Dependencies (ImageMagick)"
     echo -e "-----------------------------------"
-    echo "X) Exit"
+    echo "0) Terug"
     echo ""
 
     read -p "Make your choice: " choice
     case ${choice:-} in
         1) check_dependencies && convert_images ;;
         2) update_dependencies ;;
-        [xX]) clear; exit 0 ;;
+        0|[xX]|[qQ]) clear; exit 0 ;;
         *) echo -e "${RED}Invalid choice.${NC}" ; pause ;;
     esac
 done

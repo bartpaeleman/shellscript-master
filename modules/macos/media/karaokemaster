@@ -48,10 +48,10 @@ while true; do
     echo "2) musicinfo"
     echo "3) musicorganizer"
     echo "4) consolidate_per_artist"
-    echo -e "\n${YELLOW}X) Exit${NC}"
+    echo -e "\n${YELLOW}0) Terug${NC}"
     echo -e "${CYAN}================================================${NC}"
 
-    read -p "Select action: " choice
+    read -p "Select action [0]: " choice; choice="${choice:-0}"
 
     case "$choice" in
         1)
@@ -78,7 +78,7 @@ while true; do
             eval "\"$KARAOKE_DIR/consolidate_per_artist\" $args"
             pause
             ;;
-        [xX])
+        0|[xX]|[qQ])
             echo -e "${GREEN}Exiting...${NC}"
             clear
             break
