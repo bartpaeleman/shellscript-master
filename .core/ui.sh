@@ -16,6 +16,17 @@ NC='\033[0m'
 UI_LINE="==============================================================="
 UI_SUBLINE="---------------------------------------------------------------"
 
+ui_clear_screen() {
+    if [[ -t 1 ]]; then
+        printf '\033[2J\033[3J\033[H' || clear 2>/dev/null || true
+    fi
+}
+
+ui_pause() {
+    printf "\n"
+    read -rp "Press [Enter] to continue..." _
+}
+
 ui_divider() {
     printf "%b%s%b\n" "${DIM}" "$UI_SUBLINE" "${NC}"
 }

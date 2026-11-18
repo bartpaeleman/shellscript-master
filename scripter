@@ -152,6 +152,7 @@ route_module() {
 
 interactive_menu() {
     while true; do
+        ui_clear_screen
         ui_header "SCRIPTER CONTROL PANEL" \
             "System : ${CYAN}$(_os_display)${NC} | Arch: ${CYAN}${ARCH}${NC}" \
             "PkgMgr : ${CYAN}${PKG_MGR}${NC} | Root: ${CYAN}${IS_ROOT}${NC}"

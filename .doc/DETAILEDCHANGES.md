@@ -21,3 +21,7 @@
 - Added explicit error reporting in `_upsert_rc_block()` when an RC file is not writable, plus clear `Added`/`Updated` status and block preview.
 - Added `Press [Enter] to return to menu...` pause in `scripter` after `P) Make Persistent` so the output no longer flashes away.
 - Verified `./scripter --persist` on macOS (`~/.zshrc` updated cleanly without duplicates).
+
+### TUI Screen Reset & Full `gitmaster` Parity
+- **`.core/ui.sh` & `scripter`**: Added `ui_clear_screen()` (`\033[2J\033[3J\033[H` with `clear` fallback) and `ui_pause()` so every menu transition starts cleanly at the top of the terminal.
+- **`modules/common/git/gitmaster.sh`**: Restored all 23 options across Categories A–D (Info & Inspectie, Branching & Development, Cleanup & Maintenance, Fix & Emergency Recovery) with Bash 3.2+ & QNAP Linux compatibility and full CLI subcommand routing.
