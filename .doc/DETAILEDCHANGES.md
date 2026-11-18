@@ -36,3 +36,7 @@
 - **`datamaster`**: Restored ASCII CSV `table`, `delimiter` converter, `convert` (CSV/JSON/XML/YAML), `normalize`, and `deps` check (`pandas`, `pyyaml`).
 - **`textmaster`**: Restored `text_stats.py`, `replace` (with `.bak` + `os_sed_inplace`), `diff`, `merge`, and `case` conversion.
 - **`webmaster`**: Restored `scaffold` (assets, includes, config, `index.php`, `.gitignore`) and `generate_readme.py`.
+
+### Strict OS Filtering (`scripter`)
+- Filtered `interactive_menu()` and `show_help()` by `OS_TYPE` (`macOS` hides QNAP, `QNAP` hides macOS, `Linux` hides both) with `--all` override.
+- Added `--force` guard for OS-mismatched CLI calls (e.g. `./scripter +qnapmaster` on macOS).
