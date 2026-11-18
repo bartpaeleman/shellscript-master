@@ -1,0 +1,71 @@
+#!/bin/bash
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    echo "=========================================="
+    echo "Usage: $0 [options]"
+    echo "Dit is een master wrapper script."
+    echo ""
+    echo "Beschikbare tools in dit menu:"
+    echo -e "  1) fixaac"
+    echo -e "  2) mp3tag_manager"
+    echo -e "  3) convert_audio"
+    echo ""
+    echo "Gebruik zonder argumenten om het interactieve menu te starten."
+    echo "=========================================="
+    exit 0
+fi
+
+# Master Wrapper Script for AUDIO tools
+
+AUDIO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/AUDIO" && pwd)"
+
+# Colors
+GREEN='\033[1;32m'
+CYAN='\033[1;36m'
+YELLOW='\033[1;33m'
+RED='\033[1;31m'
+NC='\033[0m'
+
+pause() {
+    echo -e "\n${YELLOW}Press Enter to continue...${NC}"
+    read -r
+}
+
+while true; do
+    clear
+    echo -e "${CYAN}================================================${NC}"
+    echo -e "         ${CYAN}AUDIO MASTER CONTROL PANEL${NC}"
+    echo -e "${CYAN}================================================${NC}"
+    echo -e "${GREEN}Available tools:${NC}"
+    echo "1) fixaac"
+    echo "2) mp3tag_manager"
+    echo "3) convert_audio"
+    echo -e "\n${YELLOW}X) Exit${NC}"
+    echo -e "${CYAN}================================================${NC}"
+
+    read -e -p "Select action: " choice
+
+    case "$choice" in
+        1)
+            echo -e "${GREEN}Running fixaac...${NC}"
+            read -e -p "Enter arguments for fixaac (e.g. source directory): " args
+            eval "\"$AUDIO_DIR/fixaac\" $args"
+            pause
+            ;;
+        2)
+            "$AUDIO_DIR/mp3tag_manager.sh"
+            ;;
+        3)
+            "$AUDIO_DIR/convert_audio.sh"
+            ;;
+        [xX])
+            echo -e "${GREEN}Exiting...${NC}"
+            clear
+            break
+            ;;
+        *)
+            echo -e "${RED}Invalid choice.${NC}"
+            pause
+            ;;
+    esac
+done

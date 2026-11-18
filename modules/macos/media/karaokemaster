@@ -1,0 +1,91 @@
+#!/bin/bash
+
+# Zorg dat autocomplete het scherm niet overvol maakt door het te wissen bij tab
+set -o emacs
+bind '"\t": "\C-l\e\e"' 2>/dev/null || true
+
+
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+    echo "=========================================="
+    echo "Usage: $0 [options]"
+    echo "Dit is een master wrapper script."
+    echo ""
+    echo "Beschikbare tools in dit menu:"
+    echo -e "Karaoke Master
+  1) convertcdg
+  2) musicinfo
+  3) musicorganizer
+  4) consolidate_per_artist"
+    echo ""
+    echo "Gebruik zonder argumenten om het interactieve menu te starten."
+    echo "=========================================="
+    exit 0
+fi
+
+# Master Wrapper Script for KARAOKE tools
+
+KARAOKE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/KARAOKE" && pwd)"
+
+# Colors
+GREEN='\033[1;32m'
+CYAN='\033[1;36m'
+YELLOW='\033[1;33m'
+RED='\033[1;31m'
+NC='\033[0m'
+
+pause() {
+    echo -e "\n${YELLOW}Press Enter to continue...${NC}"
+    read -r
+}
+
+while true; do
+    clear
+    echo -e "${CYAN}================================================${NC}"
+    echo -e "         ${CYAN}KARAOKE MASTER CONTROL PANEL${NC}"
+    echo -e "${CYAN}================================================${NC}"
+    echo -e "${GREEN}Available tools:${NC}"
+    echo "1) convertcdg"
+    echo "2) musicinfo"
+    echo "3) musicorganizer"
+    echo "4) consolidate_per_artist"
+    echo -e "\n${YELLOW}X) Exit${NC}"
+    echo -e "${CYAN}================================================${NC}"
+
+    read -p "Select action: " choice
+
+    case "$choice" in
+        1)
+            echo -e "${GREEN}Running convertcdg...${NC}"
+            read -e -p "Enter arguments for convertcdg: " args
+            eval "\"$KARAOKE_DIR/convertcdg\" $args"
+            pause
+            ;;
+        2)
+            echo -e "${GREEN}Running musicinfo...${NC}"
+            read -e -p "Enter arguments for musicinfo: " args
+            eval "\"$KARAOKE_DIR/musicinfo\" $args"
+            pause
+            ;;
+        3)
+            echo -e "${GREEN}Running musicorganizer...${NC}"
+            read -e -p "Enter arguments for musicorganizer: " args
+            eval "\"$KARAOKE_DIR/musicorganizer\" $args"
+            pause
+            ;;
+        4)
+            echo -e "${GREEN}Running consolidate_per_artist...${NC}"
+            read -e -p "Enter arguments for consolidate_per_artist: " args
+            eval "\"$KARAOKE_DIR/consolidate_per_artist\" $args"
+            pause
+            ;;
+        [xX])
+            echo -e "${GREEN}Exiting...${NC}"
+            clear
+            break
+            ;;
+        *)
+            echo -e "${RED}Invalid choice.${NC}"
+            pause
+            ;;
+    esac
+done

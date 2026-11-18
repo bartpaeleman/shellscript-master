@@ -1,0 +1,28 @@
+# OS & Editor
+.DS_Store
+.AppleDouble
+.LSOverride
+*.swp
+*.swo
+*~
+
+# Secrets & Local Configs
+.env
+.env.*
+!.env.example
+*.local
+*.key
+*.pem
+id_rsa*
+
+# Python & Node
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+node_modules/
+
+# Legacy source repos (kept local, not tracked)
+macscripts/
+unixscripts/
