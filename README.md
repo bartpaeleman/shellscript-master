@@ -1,63 +1,50 @@
-# Shellscripts Master Hub
+# Scripter Hub
 
-Centrale, platformbewuste CLI- en menu-hub voor macOS- en QNAP-beheer, media-automatisering en security-tooling.
+Centrale, platformbewuste TUI- en CLI-hub voor **Universal**, **macOS** en **QNAP / Linux** tooling.
 
 ## Architectuur
 
 ```text
 .
-├── master                  # Centrale hub (interactief menu + CLI-routing)
+├── scripter                # Centrale hub (TUI-menu, +module routing, --persist)
 ├── .core/
 │   ├── os_detect.sh        # OS-, architectuur- en package-managerdetectie
-│   └── deps.sh             # Dependency & Update Center (binaries + Python libs)
+│   ├── ui.sh               # Centrale TUI-bibliotheek (kleuren, headers, badges)
+│   ├── deps.sh             # Dependency & Update Center (binaries + Python libs)
+│   └── persist.sh          # OS-specifieke shell-persistentie
 ├── modules/
-│   ├── macos/
-│   │   ├── macsystem/      # crontab_manager, zshrc_editor, auto_cleanup, clear_cache, uninstall
-│   │   ├── security/       # networkmaster, cybermaster, intelmaster
-│   │   └── media/          # audiomaster, videomaster, imagemaster, karaokemaster, rename_ebooks
-│   └── qnap/
-│       └── qnapmaster.sh   # Container Station status, share-cleanup, Entware updates
+│   ├── common/             # [UNIVERSAL] Cross-platform modules
+│   ├── macos/              # [macOS] macsystem, security, media
+│   └── qnap/               # [QNAP / Linux] Container Station, shares, Entware
 └── .doc/                   # Gedetailleerde per-module naslagwerken
 ```
 
-## OS-Detectie Mechanisme
+## Platform-secties
 
-`.core/os_detect.sh` detecteert automatisch:
-- `OS_TYPE`: `macOS` (`Darwin`), `QNAP` (`/etc/config/uLinux.conf`, `/share/CACHEDEV1_DATA` of `/sbin/getcfg`), `Linux` of `Unknown`.
-- `ARCH`: Systeemarchitectuur (`arm64`, `x86_64`, etc.).
-- `PKG_MGR`: Beschikbare package manager (`brew`, `opkg`, `apt`, `dnf`, `apk`).
+1. **CORE / UNIVERSAL `[UNIVERSAL]`**: `gitmaster`, `containermaster`, `dbmaster`, `datamaster`, `textmaster`, `filemaster`, `webmaster`
+2. **macOS WORKSTATION `[macOS]`**: `macmaster`, `networkmaster`, `cybermaster`, `intelmaster`, `audiomaster`, `videomaster`, `imagemaster`, `karaokemaster`, `rename_ebooks`
+3. **QNAP NAS & LINUX SERVER `[QNAP / Linux]`**: `qnapmaster` (Container Station, `@Recycle` cleanup, Entware `opkg` updates)
 
-Standaard toont `./master` **alleen de modules die relevant zijn voor het gedetecteerde OS**. Gebruik `--all` om alle platformmodules weer te geven.
-
-## Installatie & Activatie
+## CLI Gebruik & `+`-Switches
 
 ```bash
-chmod +x master .core/*.sh modules/qnap/qnapmaster.sh
-./master deps status    # Controleer ontbrekende tools
-./master deps install   # Installeer ontbrekende binaries & Python packages
+./scripter                        # Interactief TUI-hoofdmenu
+./scripter -h | --help            # Toon alle beschikbare +switches
+./scripter --persist              # Configureer OS-specifieke shell-persistentie
+
+# Directe module-aanroep (+modulenaam of --modulenaam)
+./scripter +gitmaster             # Open Git Master menu
+./scripter +git status            # Geef subcommando door aan module
+./scripter +deps status           # Controleer binaries & Python packages
+./scripter +deps install          # Installeer ontbrekende dependencies
+./scripter +macmaster             # Open macOS systeembeheer
+./scripter +networkmaster         # Start networkmaster
+./scripter +qnap containers       # Toon QNAP Container Station status
 ```
 
-## CLI Gebruik & Flags
+## OS-Specifieke Persistentie (`--persist`)
 
-```bash
-./master                  # Interactief hoofdmenu (OS-gefilterd)
-./master --all            # Interactief hoofdmenu met alle platformen
-./master -h | --help      # Toon CLI-hulp
-
-# Directe routing
-./master deps status
-./master deps install
-./master deps update
-./master macsystem
-./master security networkmaster
-./master media audiomaster
-./master qnap containers
-```
-
-## Documentatie per Module
-
-- [Core & Dependency Center](.doc/core.md)
-- [macOS System (`macsystem`)](.doc/macsystem.md)
-- [macOS Security (`security`)](.doc/security.md)
-- [macOS Media (`media`)](.doc/media.md)
-- [QNAP Hooks (`qnap`)](.doc/qnap.md)
+Via menu-optie **`P) Make Persistent`** of `./scripter --persist`:
+- **macOS**: Voegt een idempotent `# >>> scripter-hub >>>` blok toe aan `~/.zshrc` (en `~/.bash_profile` indien aanwezig).
+- **QNAP NAS**: Schrijft naar Entware `/opt/etc/profile` (indien beschrijfbaar), `~/.profile`, en maakt een symlink `/opt/bin/scripter`.
+- **Linux**: Schrijft naar `~/.bashrc` / `~/.profile` en maakt indien mogelijk een symlink `/usr/local/bin/scripter`.

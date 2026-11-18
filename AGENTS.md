@@ -15,3 +15,8 @@
 - **Environment variables**: Gebruik altijd environment variabelen of lokale `.env` bestanden voor geheimen. Alleen template/voorbeeld-bestanden zonder werkelijke geheimen (zoals `.env.example`) mogen in Git worden opgenomen.
 - **Gitignore handhaven**: Houd [.gitignore](file:///Volumes/Web/DEV/macscripts/.gitignore) up-to-date voor alle secrets, lokale configs (`*.local`, `.env*`), OS-bestanden (`.DS_Store`), caches (`__pycache__`, `*.pyc`), en virtuele omgevingen (`.venv/`, `node_modules/`).
 - **Pre-commit verificatie**: Controleer vóór elke commit en push altijd via `git status` en `git diff` dat er geen onbedoelde, gevoelige of overbodige bestanden worden meegenomen.
+
+## Hub & CLI Conventies (`scripter`)
+- De centrale entrypoint is `./scripter` (voorheen `master`).
+- Directe module-aanroep gebruikt `+modulenaam` of `--modulenaam` (bijv. `./scripter +gitmaster status`, `./scripter +deps status`).
+- UI-elementen gebruiken `.core/ui.sh` en shell-persistentie verloopt via `./scripter --persist` (`.core/persist.sh`).
