@@ -29,3 +29,10 @@
 ### Container Master (`modules/common/container/`)
 - Restored all 10 functions (`list`, `logs` with `SIGINT` trap, `inspect` via `inspect_viewer.py`, `start`, `stop`, `restart`, `shell` with `/bin/bash` -> `/bin/sh` fallback, `create`/`stack`, `rm` with `--force`, `prune`).
 - Added QNAP Container Station PATH support (`/share/CACHEDEV1_DATA/.qpkg/container-station/bin`) and macOS/Linux Docker daemon check.
+
+### Audit & Restoration of `dbmaster`, `filemaster`, `datamaster`, `textmaster`, `webmaster`
+- **`dbmaster`**: Added `mysqldump` `.sql.gz` backup and `db_stats.py` analyzer.
+- **`filemaster`**: Restored bulk Python regex rename (with preview), `mkdirs` from file, `.zip`/`.tar.gz` archive, `.DS_Store`/empty-dir/MD5-duplicate cleanup, `compare`, `sync`, `csv` export, and `fzf` finder.
+- **`datamaster`**: Restored ASCII CSV `table`, `delimiter` converter, `convert` (CSV/JSON/XML/YAML), `normalize`, and `deps` check (`pandas`, `pyyaml`).
+- **`textmaster`**: Restored `text_stats.py`, `replace` (with `.bak` + `os_sed_inplace`), `diff`, `merge`, and `case` conversion.
+- **`webmaster`**: Restored `scaffold` (assets, includes, config, `index.php`, `.gitignore`) and `generate_readme.py`.
