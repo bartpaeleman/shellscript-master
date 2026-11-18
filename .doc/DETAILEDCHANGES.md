@@ -101,3 +101,7 @@
 ### QNAP Python 3 Auto-Detection & Alias Preset (`.core/os_detect.sh`, `.core/aliases.sh`)
 - Added `os_detect_qnap_python()` in `.core/os_detect.sh` to automatically prepend `.samba_python3`, QPKG Python3, or `/opt/bin` to `PATH` on QNAP.
 - Updated `Python Venv Preset` and `alias_add_custom` in `.core/aliases.sh` to configure `export PATH` alongside `alias python3` on QNAP.
+
+### `gitmaster` & `ui_run_safe` Cross-Platform Hardening
+- Updated `ui_run_safe` in `.core/ui.sh` to capture and display `stderr` details on command failure.
+- Fixed trailing conditional one-liners in `modules/common/git/gitmaster.sh` (`opt_config`, `opt_revert_commit`, `opt_untrack`, `opt_delete_branch`) so skipping optional inputs returns `0` cleanly.
