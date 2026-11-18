@@ -35,21 +35,21 @@ show_help() {
     printf "  squash          9) Squash & clean feature branch\n"
     printf "  uat            10) Prepare UAT / merge to staging\n"
     printf "  merge-fix      11) Merge fix/* branch & cleanup\n"
-    printf "  merge-main     24) Merge active branch into main (+ Push & Cleanup)\n"
-    printf "  tag            12) Create annotated release tag & push\n\n"
+    printf "  tag            12) Create annotated release tag & push\n"
+    printf "  merge-main     13) Merge active branch into main (+ Push & Cleanup)\n\n"
     printf "CLEANUP & MAINTENANCE:\n"
-    printf "  prune          13) Prune remote-tracking & [gone] branches\n"
-    printf "  delete-branch  14) Delete local / remote branch\n"
-    printf "  backup         15) Create timestamped backup snapshot\n"
-    printf "  restore-backup 16) Restore backup snapshot\n\n"
+    printf "  prune          14) Prune remote-tracking & [gone] branches\n"
+    printf "  delete-branch  15) Delete local / remote branch\n"
+    printf "  backup         16) Create timestamped backup snapshot\n"
+    printf "  restore-backup 17) Restore backup snapshot\n\n"
     printf "FIX & EMERGENCY RECOVERY:\n"
-    printf "  stash-pull     17) Stash / pull / pop\n"
-    printf "  undo           18) Undo last commit (soft reset)\n"
-    printf "  revert         19) Restore / revert older commit\n"
-    printf "  force-sync     20) Force sync (Local <-> Remote)\n"
-    printf "  recover        21) Emergency recovery (abort, index.lock, reflog)\n"
-    printf "  untrack        22) Untrack / forget file (rm --cached + .gitignore)\n"
-    printf "  config         23) Config & token setup\n"
+    printf "  stash-pull     18) Stash / pull / pop\n"
+    printf "  undo           19) Undo last commit (soft reset)\n"
+    printf "  revert         20) Restore / revert older commit\n"
+    printf "  force-sync     21) Force sync (Local <-> Remote)\n"
+    printf "  recover        22) Emergency recovery (abort, index.lock, reflog)\n"
+    printf "  untrack        23) Untrack / forget file (rm --cached + .gitignore)\n"
+    printf "  config         24) Config & token setup\n"
 }
 
 # --- CATEGORIE A: INFO & INSPECTIE ---
@@ -483,22 +483,22 @@ git_menu() {
         ui_item "10" "Prepare UAT / Staging"   "Merge to uat"
         ui_item "11" "Merge Fix & Cleanup"     "Merge fix/* & delete"
         ui_item "12" "Release Tag & Push"      "Annotated tag + push"
+        ui_item "13" "Merge Active -> Main"    "Merge, push & safe branch cleanup"
 
         ui_section "C. CLEANUP & MAINTENANCE"
-        ui_item "13" "Prune Gone Branches"     "fetch --prune + delete [gone]"
-        ui_item "14" "Delete Branch"           "Local & optional origin"
-        ui_item "15" "Backup Snapshot Point"   "Create backup/timestamp branch"
-        ui_item "16" "Restore Backup Point"    "Checkout backup branch"
+        ui_item "14" "Prune Gone Branches"     "fetch --prune + delete [gone]"
+        ui_item "15" "Delete Branch"           "Local & optional origin"
+        ui_item "16" "Backup Snapshot Point"   "Create backup/timestamp branch"
+        ui_item "17" "Restore Backup Point"    "Checkout backup branch"
 
         ui_section "D. FIX & EMERGENCY RECOVERY"
-        ui_item "17" "Stash / Pull / Pop"      "Safe update with dirty tree"
-        ui_item "18" "Undo Last Commit (Soft)" "reset --soft HEAD~1"
-        ui_item "19" "Revert Older Commit"     "Safe git revert"
-        ui_item "20" "Force Sync"              "reset --hard or --force-with-lease"
-        ui_item "21" "Emergency Recovery"      "Abort, index.lock, reflog"
-        ui_item "22" "Untrack / Forget File"   "rm --cached + .gitignore"
-        ui_item "23" "Config & Token Setup"    "user.name / user.email"
-        ui_item "24" "Merge Active -> Main"    "Merge, push & safe branch cleanup"
+        ui_item "18" "Stash / Pull / Pop"      "Safe update with dirty tree"
+        ui_item "19" "Undo Last Commit (Soft)" "reset --soft HEAD~1"
+        ui_item "20" "Revert Older Commit"     "Safe git revert"
+        ui_item "21" "Force Sync"              "reset --hard or --force-with-lease"
+        ui_item "22" "Emergency Recovery"      "Abort, index.lock, reflog"
+        ui_item "23" "Untrack / Forget File"   "rm --cached + .gitignore"
+        ui_item "24" "Config & Token Setup"    "user.name / user.email"
         ui_item "0"  "Terug"                   ""
 
         printf "\n"
@@ -517,18 +517,18 @@ git_menu() {
             10) ui_run_safe "Prepare UAT / Staging" opt_prepare_uat ;;
             11) ui_run_safe "Merge Fix & Cleanup" opt_merge_fix ;;
             12) ui_run_safe "Release Tag & Push" opt_release_tag ;;
-            13) ui_run_safe "Prune Gone Branches" opt_prune ;;
-            14) ui_run_safe "Delete Branch" opt_delete_branch ;;
-            15) ui_run_safe "Backup Snapshot Point" opt_backup ;;
-            16) ui_run_safe "Restore Backup Point" opt_restore_backup ;;
-            17) ui_run_safe "Stash / Pull / Pop" opt_stash_pull_pop ;;
-            18) ui_run_safe "Undo Last Commit" opt_undo_last ;;
-            19) ui_run_safe "Revert Older Commit" opt_revert_commit ;;
-            20) ui_run_safe "Force Sync" opt_force_sync ;;
-            21) ui_run_safe "Emergency Recovery" opt_emergency_recovery ;;
-            22) ui_run_safe "Untrack / Forget File" opt_untrack ;;
-            23) ui_run_safe "Config & Token Setup" opt_config ;;
-            24) ui_run_safe "Merge Active -> Main" opt_merge_to_main ;;
+            13) ui_run_safe "Merge Active -> Main" opt_merge_to_main ;;
+            14) ui_run_safe "Prune Gone Branches" opt_prune ;;
+            15) ui_run_safe "Delete Branch" opt_delete_branch ;;
+            16) ui_run_safe "Backup Snapshot Point" opt_backup ;;
+            17) ui_run_safe "Restore Backup Point" opt_restore_backup ;;
+            18) ui_run_safe "Stash / Pull / Pop" opt_stash_pull_pop ;;
+            19) ui_run_safe "Undo Last Commit" opt_undo_last ;;
+            20) ui_run_safe "Revert Older Commit" opt_revert_commit ;;
+            21) ui_run_safe "Force Sync" opt_force_sync ;;
+            22) ui_run_safe "Emergency Recovery" opt_emergency_recovery ;;
+            23) ui_run_safe "Untrack / Forget File" opt_untrack ;;
+            24) ui_run_safe "Config & Token Setup" opt_config ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
