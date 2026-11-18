@@ -1,0 +1,216 @@
+#!/usr/bin/env bash
+# ./scripter - Unified Cross-Platform Hub & CLI Router
+
+set -uo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$ROOT_DIR/.core/os_detect.sh"
+source "$ROOT_DIR/.core/ui.sh"
+source "$ROOT_DIR/.core/deps.sh"
+source "$ROOT_DIR/.core/persist.sh"
+
+_os_display() {
+    case "$OS_TYPE" in
+        macOS) echo "macOS (Darwin)" ;;
+        QNAP)  echo "QNAP NAS (Linux)" ;;
+        Linux) echo "Linux ($(uname -r 2>/dev/null || echo kernel))" ;;
+        *)     echo "Unknown" ;;
+    esac
+}
+
+show_help() {
+    ui_header "SCRIPTER HUB - CLI REFERENCE" "System : ${CYAN}$(_os_display)${NC} | Arch: ${CYAN}${ARCH}${NC} | PkgMgr: ${CYAN}${PKG_MGR}${NC}"
+    printf "\n%bUSAGE:%b\n" "${YELLOW}${BOLD}" "${NC}"
+    printf "  ./scripter                      Launch interactive TUI menu\n"
+    printf "  ./scripter +<module> [args...]    Direct module routing (+ or -- prefix)\n"
+    printf "  ./scripter --persist              Configure OS-specific shell persistence\n"
+    printf "  ./scripter -h | --help            Show this help message\n"
+
+    printf "\n%bAVAILABLE +SWITCHES:%b\n" "${YELLOW}${BOLD}" "${NC}"
+    printf "  %b[UNIVERSAL]%b\n" "${GREEN}" "${NC}"
+    printf "    +gitmaster (+git)               Git Workflow Manager\n"
+    printf "    +containermaster (+container)   Docker / Container Manager\n"
+    printf "    +dbmaster (+db)                 Database Tools\n"
+    printf "    +datamaster (+data)             Data Processing Tools\n"
+    printf "    +textmaster (+text)             Text Processing Tools\n"
+    printf "    +filemaster (+file)             File Management Tools\n"
+    printf "    +webmaster (+web)               Web Scaffold Tools\n"
+    printf "  %b[macOS]%b\n" "${MAGENTA}" "${NC}"
+    printf "    +macmaster (+macsystem)         macOS System Maintenance\n"
+    printf "    +networkmaster (+net)           Network Scanner & Tools\n"
+    printf "    +cybermaster (+cyber)           Cybersecurity & Recon\n"
+    printf "    +intelmaster (+intel)           Threat Intelligence\n"
+    printf "    +audiomaster (+audio)           Audio Processing & Tagging\n"
+    printf "    +videomaster (+video)           Video Processing\n"
+    printf "    +imagemaster (+image)           Image Batch Processing\n"
+    printf "    +karaokemaster (+karaoke)       Karaoke & CDG Tools\n"
+    printf "    +rename_ebooks (+ebooks)        E-book Metadata Renamer\n"
+    printf "  %b[QNAP / Linux]%b\n" "${CYAN}" "${NC}"
+    printf "    +qnap (+qnapmaster)             QNAP Container, Share & Entware Tools\n"
+    printf "  %b[SYSTEM]%b\n" "${YELLOW}" "${NC}"
+    printf "    +deps [status|install|update]   Dependency & Update Center\n"
+    printf "    --persist                       Make scripter persistent on this OS\n\n"
+}
+
+_run_tool() {
+    local path="$1"
+    shift || true
+    if [[ -x "$path" ]]; then
+        "$path" "$@"
+    elif [[ -f "$path" ]]; then
+        bash "$path" "$@"
+    else
+        ui_warn "Module not installed at: $path"
+        return 1
+    fi
+}
+
+_resolve_common() {
+    local name="$1"
+    shift || true
+    local candidates=(
+        "$ROOT_DIR/modules/common/$name/${name}master.sh"
+        "$ROOT_DIR/modules/common/$name/$name.sh"
+        "$ROOT_DIR/modules/common/$name.sh"
+    )
+    local c
+    for c in "${candidates[@]}"; do
+        if [[ -f "$c" ]]; then
+            _run_tool "$c" "$@"
+            return $?
+        fi
+    done
+    ui_warn "Universal module '$name' is not yet migrated into modules/common/."
+    return 1
+}
+
+route_module() {
+    local raw="$1"
+    shift || true
+    local mod="${raw#+}"
+    mod="${mod#--}"
+
+    case "$mod" in
+        deps|dep)
+            case "${1:-status}" in
+                status|check) deps_status ;;
+                install)      deps_install_missing ;;
+                update)       deps_update_all ;;
+                menu)         deps_menu ;;
+                *)            ui_err "Usage: scripter +deps {status|install|update|menu}"; exit 1 ;;
+            esac
+            ;;
+        gitmaster|git)             _resolve_common "git" "$@" ;;
+        containermaster|container) _resolve_common "container" "$@" ;;
+        dbmaster|db)               _resolve_common "db" "$@" ;;
+        datamaster|data)           _resolve_common "data" "$@" ;;
+        textmaster|text)           _resolve_common "text" "$@" ;;
+        filemaster|file)           _resolve_common "file" "$@" ;;
+        webmaster|web)             _resolve_common "web" "$@" ;;
+        macmaster|macsystem|mac)
+            if [[ -z "${1:-}" ]]; then
+                _run_tool "$ROOT_DIR/modules/macos/macsystem/macmanager.sh"
+            else
+                local sub="$1"; shift
+                _run_tool "$ROOT_DIR/modules/macos/macsystem/${sub%.sh}.sh" "$@"
+            fi
+            ;;
+        networkmaster|net)         _run_tool "$ROOT_DIR/modules/macos/security/networkmaster" "$@" ;;
+        cybermaster|cyber)         _run_tool "$ROOT_DIR/modules/macos/security/cybermaster" "$@" ;;
+        intelmaster|intel)         _run_tool "$ROOT_DIR/modules/macos/security/intelmaster" "$@" ;;
+        audiomaster|audio)         _run_tool "$ROOT_DIR/modules/macos/media/audiomaster" "$@" ;;
+        videomaster|video)         _run_tool "$ROOT_DIR/modules/macos/media/videomaster" "$@" ;;
+        imagemaster|image)         _run_tool "$ROOT_DIR/modules/macos/media/imagemaster" "$@" ;;
+        karaokemaster|karaoke)     _run_tool "$ROOT_DIR/modules/macos/media/karaokemaster" "$@" ;;
+        rename_ebooks|ebooks)      _run_tool "$ROOT_DIR/modules/macos/media/rename_ebooks" "$@" ;;
+        qnap|qnapmaster)           _run_tool "$ROOT_DIR/modules/qnap/qnapmaster.sh" "$@" ;;
+        *)
+            ui_err "Unknown module/switch: '$raw'. Run './scripter --help' for available +switches."
+            exit 1
+            ;;
+    esac
+}
+
+interactive_menu() {
+    while true; do
+        ui_header "SCRIPTER CONTROL PANEL" \
+            "System : ${CYAN}$(_os_display)${NC} | Arch: ${CYAN}${ARCH}${NC}" \
+            "PkgMgr : ${CYAN}${PKG_MGR}${NC} | Root: ${CYAN}${IS_ROOT}${NC}"
+
+        ui_section "1. CORE / UNIVERSAL $(ui_badge CORE)"
+        ui_item "1" "gitmaster"       "Git workflow manager"
+        ui_item "2" "containermaster" "Docker & container tools"
+        ui_item "3" "dbmaster"        "Database utilities"
+        ui_item "4" "datamaster"      "Data processing"
+        ui_item "5" "textmaster"      "Text & log utilities"
+        ui_item "6" "filemaster"      "File & batch rename tools"
+        ui_item "7" "webmaster"       "Web project scaffold"
+
+        ui_section "2. macOS WORKSTATION $(ui_badge MAC)"
+        ui_item "8"  "macmaster"      "System, crontab, zshrc, cleanup"
+        ui_item "9"  "networkmaster"  "Network scanner & geotrace"
+        ui_item "10" "cybermaster"    "Recon, mail & risk scoring"
+        ui_item "11" "intelmaster"    "Threat intelligence analyzer"
+        ui_item "12" "audiomaster"    "Audio conversion & MP3 tags"
+        ui_item "13" "videomaster"    "Video conversion & A/V tools"
+        ui_item "14" "imagemaster"    "Image batch & EXIF tools"
+        ui_item "15" "karaokemaster"  "CDG & karaoke organizer"
+        ui_item "16" "rename_ebooks"  "E-book metadata renamer"
+
+        ui_section "3. QNAP NAS & LINUX SERVER $(ui_badge QNAP)"
+        ui_item "17" "qnapmaster"     "Container Station, @Recycle, Entware"
+
+        ui_section "4. SYSTEM & SETUP"
+        ui_item "D" "Dependency Center" "Check, install or update tools"
+        ui_item "P" "Make Persistent"   "Configure shell alias/PATH for $OS_TYPE"
+        ui_item "0" "Exit"              ""
+
+        printf "\n"
+        read -rp "Select option: " choice
+        case "$choice" in
+            1)  route_module "+gitmaster" ;;
+            2)  route_module "+containermaster" ;;
+            3)  route_module "+dbmaster" ;;
+            4)  route_module "+datamaster" ;;
+            5)  route_module "+textmaster" ;;
+            6)  route_module "+filemaster" ;;
+            7)  route_module "+webmaster" ;;
+            8)  route_module "+macmaster" ;;
+            9)  route_module "+networkmaster" ;;
+            10) route_module "+cybermaster" ;;
+            11) route_module "+intelmaster" ;;
+            12) route_module "+audiomaster" ;;
+            13) route_module "+videomaster" ;;
+            14) route_module "+imagemaster" ;;
+            15) route_module "+karaokemaster" ;;
+            16) route_module "+rename_ebooks" ;;
+            17) route_module "+qnapmaster" ;;
+            d|D) deps_menu ;;
+            p|P) persist_system ;;
+            0|q|Q|exit) exit 0 ;;
+            *) ui_warn "Invalid option: $choice" ;;
+        esac
+    done
+}
+
+# --- CLI ENTRYPOINT ---
+if [[ $# -eq 0 ]]; then
+    interactive_menu
+fi
+
+case "$1" in
+    -h|--help)
+        show_help
+        exit 0
+        ;;
+    --persist)
+        persist_system
+        exit 0
+        ;;
+    +*|--*)
+        route_module "$@"
+        ;;
+    *)
+        route_module "+$1" "${@:2}"
+        ;;
+esac
