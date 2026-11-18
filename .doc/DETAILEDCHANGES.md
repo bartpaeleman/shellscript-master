@@ -55,3 +55,19 @@
 - **`.core/ui.sh`**: Added `ui_run_safe "<desc>" <cmd...>` try/catch wrapper and updated `ui_pause()` to `Druk op [Enter] of typ '0' om terug te keren...`.
 - **`scripter`, `qnapmaster.sh`, and all 7 `modules/common/*` modules**: Standardized `0) Terug` / `0) Afsluiten (Exit)` and wrapped interactive actions in `ui_run_safe`.
 - **`AGENTS.md`**: Added `0` navigation and `ui_run_safe` as permanent coding standards.
+
+### Repository Rename (`shellscript-master`)
+- Verified `origin` remote points to `https://github.com/bartpaeleman/shellscript-master.git` and confirmed no stale `unified-master-hub` references remain in tracked docs/scripts.
+
+### OS-Scoped Dependency Filtering (`.core/deps.sh` & `.core/os_detect.sh`)
+- Split dependencies into `COMMON_DEPS`, `MACOS_DEPS`, `QNAP_DEPS` (and `COMMON_PYTHON_DEPS` / `MACOS_PYTHON_DEPS`); `QNAP`/`Linux` now skip `MACOS_DEPS` unless `--all` is set.
+- Added `/opt/bin:/opt/sbin` to `PATH` on QNAP for Entware (`opkg`) detection, `.dep/.venv/bin/pip` support, and clean `[INFO]` message when `opkg` is absent.
+
+### Shortcodes & Complete `README.md` (`scripter`, `gitmaster`, `containermaster`, `README.md`)
+- Added conflict-free shortcodes (`-g`, `-c`, `-b`, `-w`, `-m`, `-q`, `-f`, `-a`, `-t`, `-e`, `-n`, `-y`, `-i`, `-u`, `-v`, `-p`, `-k`) and `+switches` to `scripter` and `show_help()`.
+- Added short subcommand aliases in `gitmaster.sh` (`st`, `df`, `sw`, `ci`, `sq`, `pr`, `bak`, `rst`) and `containermaster.sh` (`ls`, `lg`, `in`, `rs`, `sh`, `cleanup`).
+- Rewrote `README.md` as a complete user manual for `shellscript-master`.
+
+### QNAP Persistence & Profile Scanner / Editor (`modules/qnap/qnapmaster.sh`)
+- Added `qnap_persistence_scan` (`scripter -q persistence`) scanning `[PERSISTENT]` (`/share/homes/*/.profile`, `/opt/etc/profile`, `/opt/bin/scripter`, `/etc/config/autorun.sh`) and `[SESSION]` (`/root/.*`, `/etc/.*`, `/usr/local/bin/scripter`, `/usr/bin/scripter`) locations.
+- Added safe per-file actions: timestamped `.bak` backup, `sudo`-aware editing (`nano`/`vim`/`vi`), rule preview, and `# >>> scripter-hub >>>` block removal.

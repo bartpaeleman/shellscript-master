@@ -1,16 +1,22 @@
 #!/usr/bin/env bash
-# .core/deps.sh - Dependency & Update Center for Master Hub
+# .core/deps.sh - OS-Scoped Dependency & Update Center
 
 CORE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=.core/os_detect.sh
+ROOT_DIR="$(cd "$CORE_DIR/.." && pwd)"
 [[ -z "${OS_TYPE:-}" ]] && source "$CORE_DIR/os_detect.sh"
 
-# Required/optional CLI binaries: "cmd:brew_pkg:opkg_pkg:apt_pkg:description"
-DEPS_BINARIES=(
+# Format: "cmd:brew_pkg:opkg_pkg:apt_pkg:description"
+COMMON_DEPS=(
     "git:git:git:git:Version control"
     "curl:curl:curl:curl:HTTP client"
     "jq:jq:jq:jq:JSON processor"
     "python3:python3:python3:python3:Python 3 runtime"
+    "zip:zip:zip:zip:Archive tool (filemaster)"
+    "tar:gnu-tar:tar:tar:Archive tool (filemaster)"
+    "fzf:fzf:fzf:fzf:Interactive finder (optional)"
+)
+
+MACOS_DEPS=(
     "ffmpeg:ffmpeg:ffmpeg:ffmpeg:Audio/video processing (audiomaster, videomaster, karaokemaster)"
     "nmap:nmap:nmap:nmap:Network scanner (networkmaster, cybermaster)"
     "exiftool:exiftool:perl-image-exiftool:libimage-exiftool-perl:Metadata tool (imagemaster, rename_ebooks)"
@@ -18,18 +24,23 @@ DEPS_BINARIES=(
     "yt-dlp:yt-dlp:yt-dlp:yt-dlp:Media downloader (audiomaster, videomaster)"
 )
 
-# Required/optional Python packages: "import_name:pip_pkg:description"
-DEPS_PYTHON=(
+QNAP_DEPS=()
+
+# Format: "import_name:pip_pkg:description"
+COMMON_PYTHON_DEPS=(
+    "requests:requests:HTTP requests"
+    "yaml:pyyaml:YAML parser (datamaster)"
+)
+
+MACOS_PYTHON_DEPS=(
     "mutagen:mutagen:Audio tagger (audiomaster)"
     "PIL:pillow:Image processing (imagemaster)"
     "pypdf:pypdf:PDF metadata/ebooks (rename_ebooks)"
-    "requests:requests:HTTP requests (intelmaster, cybermaster)"
     "bs4:beautifulsoup4:HTML parsing (intelmaster)"
 )
 
 _dep_color() {
-    local code="$1"
-    shift
+    local code="$1"; shift
     if [[ -t 1 ]]; then
         printf "\033[%sm%s\033[0m" "$code" "$*"
     else
@@ -37,13 +48,52 @@ _dep_color() {
     fi
 }
 
+_pip_bin() {
+    if [[ -x "$ROOT_DIR/.dep/.venv/bin/pip" ]]; then
+        echo "$ROOT_DIR/.dep/.venv/bin/pip"
+    elif command -v pip3 >/dev/null 2>&1; then
+        echo "pip3"
+    else
+        echo ""
+    fi
+}
+
+_py_bin() {
+    if [[ -x "$ROOT_DIR/.dep/.venv/bin/python" ]]; then
+        echo "$ROOT_DIR/.dep/.venv/bin/python"
+    elif command -v python3 >/dev/null 2>&1; then
+        echo "python3"
+    else
+        echo ""
+    fi
+}
+
+_active_bin_deps() {
+    ACTIVE_BINS=("${COMMON_DEPS[@]}")
+    if [[ "$OS_TYPE" == "macOS" || "${SHOW_ALL:-false}" == "true" ]]; then
+        ACTIVE_BINS+=("${MACOS_DEPS[@]}")
+    fi
+    if [[ "$OS_TYPE" == "QNAP" || "${SHOW_ALL:-false}" == "true" ]]; then
+        [[ ${#QNAP_DEPS[@]} -gt 0 ]] && ACTIVE_BINS+=("${QNAP_DEPS[@]}")
+    fi
+}
+
+_active_py_deps() {
+    ACTIVE_PY=("${COMMON_PYTHON_DEPS[@]}")
+    if [[ "$OS_TYPE" == "macOS" || "${SHOW_ALL:-false}" == "true" ]]; then
+        ACTIVE_PY+=("${MACOS_PYTHON_DEPS[@]}")
+    fi
+}
+
 deps_status() {
+    _active_bin_deps
+    _active_py_deps
     echo "=== Dependency Status ($OS_TYPE / $ARCH / pkg: $PKG_MGR) ==="
     echo ""
     echo "--- CLI Binaries ---"
     local missing_bins=0
     local entry cmd brew_p opkg_p apt_p desc
-    for entry in "${DEPS_BINARIES[@]}"; do
+    for entry in "${ACTIVE_BINS[@]}"; do
         IFS=':' read -r cmd brew_p opkg_p apt_p desc <<< "$entry"
         if command -v "$cmd" >/dev/null 2>&1; then
             printf "  [%s] %-12s - %s\n" "$(_dep_color '32' 'OK')" "$cmd" "$desc"
@@ -56,11 +106,12 @@ deps_status() {
     echo ""
     echo "--- Python Packages ---"
     local missing_py=0
-    if command -v python3 >/dev/null 2>&1; then
+    local py; py="$(_py_bin)"
+    if [[ -n "$py" ]]; then
         local imp pkg pdesc
-        for entry in "${DEPS_PYTHON[@]}"; do
+        for entry in "${ACTIVE_PY[@]}"; do
             IFS=':' read -r imp pkg pdesc <<< "$entry"
-            if python3 -c "import $imp" >/dev/null 2>&1; then
+            if "$py" -c "import $imp" >/dev/null 2>&1; then
                 printf "  [%s] %-14s - %s\n" "$(_dep_color '32' 'OK')" "$pkg" "$pdesc"
             else
                 printf "  [%s] %-14s - %s\n" "$(_dep_color '31' 'MISSING')" "$pkg" "$pdesc"
@@ -82,28 +133,41 @@ _install_pkg() {
         apt)  sudo apt-get install -y "$apt_p" ;;
         dnf)  sudo dnf install -y "$apt_p" ;;
         apk)  sudo apk add "$apt_p" ;;
-        *)    echo "No supported package manager found for $OS_TYPE." ; return 1 ;;
+        *)    return 1 ;;
     esac
 }
 
 deps_install_missing() {
-    echo "Checking and installing missing dependencies..."
-    local entry cmd brew_p opkg_p apt_p desc
-    for entry in "${DEPS_BINARIES[@]}"; do
-        IFS=':' read -r cmd brew_p opkg_p apt_p desc <<< "$entry"
-        if ! command -v "$cmd" >/dev/null 2>&1; then
-            echo "Installing $cmd ($brew_p)..."
-            _install_pkg "$brew_p" "$opkg_p" "$apt_p" || echo "Warning: failed to install $cmd"
-        fi
-    done
+    _active_bin_deps
+    _active_py_deps
+    echo "Checking and installing missing dependencies for $OS_TYPE..."
 
-    if command -v python3 >/dev/null 2>&1 && command -v pip3 >/dev/null 2>&1; then
+    if [[ "$PKG_MGR" == "opkg" ]]; then
+        opkg update >/dev/null 2>&1 || true
+    elif [[ "$PKG_MGR" == "none" && "$OS_TYPE" == "QNAP" ]]; then
+        echo "[INFO] Entware (opkg) niet gedetecteerd op QNAP — systeem-packages worden overgeslagen; Python .venv packages werken wel zelfstandig."
+    fi
+
+    local entry cmd brew_p opkg_p apt_p desc
+    if [[ "$PKG_MGR" != "none" ]]; then
+        for entry in "${ACTIVE_BINS[@]}"; do
+            IFS=':' read -r cmd brew_p opkg_p apt_p desc <<< "$entry"
+            if ! command -v "$cmd" >/dev/null 2>&1; then
+                echo "Installing $cmd..."
+                _install_pkg "$brew_p" "$opkg_p" "$apt_p" || echo "Warning: failed to install $cmd"
+            fi
+        done
+    fi
+
+    local pip_cmd; pip_cmd="$(_pip_bin)"
+    local py; py="$(_py_bin)"
+    if [[ -n "$py" && -n "$pip_cmd" ]]; then
         local imp pkg pdesc
-        for entry in "${DEPS_PYTHON[@]}"; do
+        for entry in "${ACTIVE_PY[@]}"; do
             IFS=':' read -r imp pkg pdesc <<< "$entry"
-            if ! python3 -c "import $imp" >/dev/null 2>&1; then
+            if ! "$py" -c "import $imp" >/dev/null 2>&1; then
                 echo "Installing Python package $pkg..."
-                pip3 install --user "$pkg" 2>/dev/null || pip3 install "$pkg" || echo "Warning: failed to install $pkg"
+                "$pip_cmd" install "$pkg" 2>/dev/null || "$pip_cmd" install --user "$pkg" || echo "Warning: failed to install $pkg"
             fi
         done
     fi
@@ -117,15 +181,17 @@ deps_update_all() {
         apt)  sudo apt-get update && sudo apt-get upgrade -y ;;
         dnf)  sudo dnf upgrade -y ;;
         apk)  sudo apk update && sudo apk upgrade ;;
-        *)    echo "No supported package manager found." ;;
+        *)    echo "[INFO] Geen ondersteunde systeem-package manager ($PKG_MGR); systeem-update overgeslagen." ;;
     esac
 
-    if command -v pip3 >/dev/null 2>&1; then
+    local pip_cmd; pip_cmd="$(_pip_bin)"
+    if [[ -n "$pip_cmd" ]]; then
+        _active_py_deps
         echo "Updating Python packages..."
         local entry imp pkg pdesc
-        for entry in "${DEPS_PYTHON[@]}"; do
+        for entry in "${ACTIVE_PY[@]}"; do
             IFS=':' read -r imp pkg pdesc <<< "$entry"
-            pip3 install --upgrade --user "$pkg" 2>/dev/null || true
+            "$pip_cmd" install --upgrade "$pkg" 2>/dev/null || true
         done
     fi
 }
@@ -133,11 +199,11 @@ deps_update_all() {
 deps_menu() {
     while true; do
         echo ""
-        echo "=== Dependency & Update Center ==="
-        echo "1) Check status of all binaries & Python packages"
+        echo "=== Dependency & Update Center ($OS_TYPE) ==="
+        echo "1) Check status of binaries & Python packages"
         echo "2) Install missing dependencies"
         echo "3) Update all tools & packages"
-        echo "0) Back"
+        echo "0) Terug"
         read -rp "Choice: " choice
         case "$choice" in
             1) deps_status ;;

@@ -18,6 +18,10 @@ detect_os() {
         fi
     fi
 
+    if [[ "$OS_TYPE" == "QNAP" ]]; then
+        export PATH="/opt/bin:/opt/sbin:$PATH"
+    fi
+
     if command -v brew >/dev/null 2>&1; then
         PKG_MGR="brew"
     elif command -v opkg >/dev/null 2>&1; then
