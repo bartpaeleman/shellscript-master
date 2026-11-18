@@ -112,3 +112,4 @@
 
 ### `gitmaster` Local & Remote Branch Checkout (`modules/common/git/gitmaster.sh`)
 - Updated `opt_checkout` to run `git fetch --all --prune`, deduplicate local & `origin/*` branches with `[LOKAAL]` / `[REMOTE - origin]` tags, and support `Enter = 0` (`ui_read_menu_choice`).
+- Added Option 24 `opt_merge_to_main` (`merge-main`): pre-flight dirty-tree stash check, merge `--no-ff` into `main`/`master` with optional `origin/main` push, conflict abort guard, and safe `git branch -d` / `origin` cleanup.

@@ -35,6 +35,7 @@ show_help() {
     printf "  squash          9) Squash & clean feature branch\n"
     printf "  uat            10) Prepare UAT / merge to staging\n"
     printf "  merge-fix      11) Merge fix/* branch & cleanup\n"
+    printf "  merge-main     24) Merge active branch into main (+ Push & Cleanup)\n"
     printf "  tag            12) Create annotated release tag & push\n\n"
     printf "CLEANUP & MAINTENANCE:\n"
     printf "  prune          13) Prune remote-tracking & [gone] branches\n"
@@ -244,6 +245,75 @@ opt_merge_fix() {
     fi
 }
 
+opt_merge_to_main() {
+    _require_repo || return 1
+    local current_branch; current_branch="$(_current_branch)"
+    local main_branch="main"
+    if ! git show-ref --verify --quiet refs/heads/main; then
+        git show-ref --verify --quiet refs/heads/master && main_branch="master"
+    fi
+
+    if [[ "$current_branch" == "$main_branch" ]]; then
+        ui_warn "Je zit al op '$main_branch'; kies eerst een feature-branch om te mergen."
+        return 0
+    fi
+
+    if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
+        ui_warn "Working tree heeft uncommitted wijzigingen."
+        if ui_confirm_action "Eerst stashen ('git stash push -u')?"; then
+            git stash push -u -m "gitmaster-pre-merge" || return 1
+        else
+            return 0
+        fi
+    fi
+
+    ui_section "MERGE '$current_branch' -> '$main_branch'"
+    echo "  1) Lokaal mergen naar $main_branch"
+    echo "  2) Lokaal mergen naar $main_branch EN direct pushen naar GitHub (origin/$main_branch) [Default]"
+    echo "  0) Annuleren"
+    local mode=""
+    read -rp "Choice [1/2/0, Enter=2]: " mode
+    case "${mode:-2}" in
+        0|q|Q|c|cancel) ui_cancel_msg; return 0 ;;
+        1|2) ;;
+        *) ui_cancel_msg; return 0 ;;
+    esac
+
+    git fetch origin >/dev/null 2>&1 || true
+    git checkout "$main_branch" || return 1
+    git pull origin "$main_branch" 2>/dev/null || true
+
+    if ! git merge --no-ff "$current_branch" -m "Merge branch '$current_branch' into $main_branch"; then
+        ui_err "Merge-conflict opgetreden tijdens mergen van '$current_branch' in '$main_branch'!"
+        if ui_confirm_action "Merge afbreken ('git merge --abort')?"; then
+            git merge --abort
+            ui_info "Merge afgebroken; repository hersteld."
+        fi
+        return 1
+    fi
+    ui_ok "Merged '$current_branch' into '$main_branch'."
+
+    if [[ "${mode:-2}" == "2" ]]; then
+        git push origin "$main_branch" || return 1
+        ui_ok "Pushed '$main_branch' to origin/$main_branch."
+    fi
+
+    ui_section "BRANCH CLEANUP ('$current_branch')"
+    echo "  1) Verwijder '$current_branch' alleen LOKAAL (git branch -d)"
+    echo "  2) Verwijder '$current_branch' alleen op GITHUB (git push origin --delete)"
+    echo "  3) Verwijder '$current_branch' zowel LOKAAL als op GITHUB"
+    echo "  0) Behoud '$current_branch' (overslaan)"
+    local cl=""
+    ui_read_menu_choice cl "Choice"
+    case "$cl" in
+        1) git branch -d "$current_branch" ;;
+        2) git push origin --delete "$current_branch" ;;
+        3) git branch -d "$current_branch" && git push origin --delete "$current_branch" ;;
+        *) ui_info "Branch '$current_branch' behouden." ;;
+    esac
+    return 0
+}
+
 opt_release_tag() {
     _require_repo || return 1
     local tag=""
@@ -428,6 +498,7 @@ git_menu() {
         ui_item "21" "Emergency Recovery"      "Abort, index.lock, reflog"
         ui_item "22" "Untrack / Forget File"   "rm --cached + .gitignore"
         ui_item "23" "Config & Token Setup"    "user.name / user.email"
+        ui_item "24" "Merge Active -> Main"    "Merge, push & safe branch cleanup"
         ui_item "0"  "Terug"                   ""
 
         printf "\n"
@@ -457,6 +528,7 @@ git_menu() {
             21) ui_run_safe "Emergency Recovery" opt_emergency_recovery ;;
             22) ui_run_safe "Untrack / Forget File" opt_untrack ;;
             23) ui_run_safe "Config & Token Setup" opt_config ;;
+            24) ui_run_safe "Merge Active -> Main" opt_merge_to_main ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
@@ -476,6 +548,7 @@ case "${1:-menu}" in
     squash|sq)               opt_squash ;;
     uat)                     opt_prepare_uat ;;
     merge-fix)               opt_merge_fix ;;
+    merge-main)              opt_merge_to_main ;;
     tag)                     opt_release_tag ;;
     prune|pr)                opt_prune ;;
     delete-branch)           opt_delete_branch ;;
