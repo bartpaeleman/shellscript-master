@@ -58,3 +58,7 @@
 
 ### Repository Rename (`shellscript-master`)
 - Verified `origin` remote points to `https://github.com/bartpaeleman/shellscript-master.git` and confirmed no stale `unified-master-hub` references remain in tracked docs/scripts.
+
+### OS-Scoped Dependency Filtering (`.core/deps.sh` & `.core/os_detect.sh`)
+- Split dependencies into `COMMON_DEPS`, `MACOS_DEPS`, `QNAP_DEPS` (and `COMMON_PYTHON_DEPS` / `MACOS_PYTHON_DEPS`); `QNAP`/`Linux` now skip `MACOS_DEPS` unless `--all` is set.
+- Added `/opt/bin:/opt/sbin` to `PATH` on QNAP for Entware (`opkg`) detection, `.dep/.venv/bin/pip` support, and clean `[INFO]` message when `opkg` is absent.
