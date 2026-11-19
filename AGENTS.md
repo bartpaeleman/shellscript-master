@@ -20,6 +20,7 @@
 - De centrale entrypoint is `./scripter` (voorheen `master`).
 - **Menu-Indeling & OS-Filtering**: Functionele hoofdcategorieën met strikte verberging van niet-ondersteunde modules en lege categorieën op het actieve OS (`OS_TYPE`, `os_is_macos`, `os_is_qnap`, `os_is_linux`), dynamische sectie-/itemnummering zonder gaten, en zichtbare platformtags (`[UNI]`, `[MAC]`, `[QNAP]`).
 - **CLI Switches & Shortcodes**: Nieuwe modules vereisen een unieke short-flag (`-x`), `+`-switches (`+naam`, `+kort`), argument-doorvoer naar de module en update van `scripter --help` en `README.md`.
+- **28-Rijen Terminal Limiet**: Elk individueel menuscherm (hoofdmenu én module-/submenu's) mag maximaal ~22–24 regels hoog zijn (inclusief header, lege regels en input-prompt) zodat er op een 28-rijen terminal nooit tekst bovenaan wegvalt. Grotere modules worden opgesplitst in categorische submenu's.
 - **Hoofdmenu vs. Submenu-navigatie**:
   - **Hoofdmenu (`scripter`)**: Gebruikt `X` / `x` (`X) Exit`) om af te sluiten, **zonder** `Enter`-default (een lege `Enter` herlaadt het hoofdmenu om per ongeluk afsluiten te voorkomen), gevolgd door `clear` bij verlaten.
   - **Submenu's & Modules**: Gebruiken `0` als primaire terug-optie (`0) Terug`), waarbij `ui_read_menu_choice` lege invoer (`Enter`) standaard omzet naar `0`, en invoer-prompts accepteren `0` (of `q`) om te annuleren.

@@ -88,7 +88,7 @@ Maak `scripter` overal in de terminal beschikbaar:
 ## 5. Overzicht per Functionele Categorie
 
 - **Development & Ops:**
-  - `gitmaster` (24 functies): `status`/`st`, `diff`/`df`, `history`/`log`, `compare`, `start`, `switch`/`sw`, `commit`/`ci`, `sync`/`pull` (Standard Pull default), `squash`/`sq`, `uat`, `merge-fix`, `merge-main` (merge naar `main` + push + veilige cleanup), `tag`, `prune`/`pr`, `delete-branch`, `backup`/`bak`, `restore`/`rst`, `stash-pull`, `undo`, `revert`, `force-sync`, `recover`, `untrack`, `config`.
+  - `gitmaster` (24 functies, opgedeeld in 6 categorische submenu's voor 28-rijen terminals): `status`/`st`, `diff`/`df`, `history`/`log`, `compare`, `start`, `switch`/`sw`, `commit`/`ci`, `sync`/`pull` (Standard Pull default), `squash`/`sq`, `uat`, `merge-fix`, `merge-main` (merge naar `main` + push + veilige cleanup), `tag`, `prune`/`pr`, `delete-branch`, `backup`/`bak`, `restore`/`rst`, `stash-pull`, `undo`, `revert`, `force-sync`, `recover`, `untrack`, `config`.
   - `containermaster` (10 functies): `list`/`ls`, `logs`/`lg` (Ctrl+C veilig), `inspect`/`in` (`inspect_viewer.py`), `start`, `stop`, `restart`/`rs`, `shell`/`sh` (`/bin/bash` -> `/bin/sh`), `create`, `rm`, `cleanup`/`prune`.
   - `dbmaster`: `backup` (`.sql.gz` via `mysqldump`), `analyze` (`db_stats.py`), `check`.
   - `webmaster`: `scaffold` (`assets/`, `includes/`, `config/`, `index.php`), `readme` (`generate_readme.py`), `serve`.

@@ -2,6 +2,12 @@
 
 ## Unreleased (`shellscripts` branch)
 
+### 28-Rijen Terminal Limiet & Categorische `gitmaster` Submenu's (`scripter`, `gitmaster.sh`, `AGENTS.md`, `README.md`)
+- **`scripter`**: Hoofdmenu gecompacteerd met een 2-regelige banner, 2-koloms module-weergave per categorie en een 1-regelige utilities-balk (`P) Persist | D) Deps | H) Help | X) Exit`). Regelaantal teruggebracht van 40 naar 17 (macOS) en van 28 naar 11 (QNAP), met behoud van OS-filtering en `X) Exit` + `clear`.
+- **`modules/common/git/gitmaster.sh`**: Platte 24-opties lijst (41 regels) opgesplitst in een compact hoofdmenu (10 regels) en 5 categorische submenu's (`Status, Diff & Log`, `Dagelijkse Workflow`, `Branches & Merging`, `Stash & Herstel`, `Remotes, Tags & Onderhoud`, elk 7–11 regels) + directe `Config & Token Setup`, met behoud van alle 24 functies en `Enter = 0` via `ui_read_menu_choice`.
+- **`AGENTS.md` & `README.md`**: De 28-rijen terminal limiet (max. ~22–24 regels per menuscherm) vastgelegd als vaste ontwerpstandaard in `AGENTS.md` en de nieuwe `gitmaster` submenu-indeling gedocumenteerd in `README.md`.
+- **Verification**: `bash -n scripter modules/common/git/gitmaster.sh` geslaagd; alle menuschermen op macOS én `OS_TYPE=QNAP` gemeten op `<= 24` regels.
+
 ### `gitmaster` Option 15 (`Delete Branch`) Numbered Selection & Scope Menu (`modules/common/git/gitmaster.sh`)
 - Extracted shared `_collect_branches()` helper for both Option 6 (`opt_checkout`) and Option 15 (`opt_delete_branch`) with `git fetch --all --prune` and `[LOKAAL]` / `[REMOTE - origin]` / `[LOKAAL + REMOTE]` tags (Bash 3.2+ & QNAP compatible).
 - Updated `opt_delete_branch` to display numbered branches (`1..N`) with `* [HUIDIG - beschermd]` and `[BESCHERMD]` markers, block deletion of active/`main`/`master` branches, and present a follow-up menu (`1` local `git branch -d` with explicit `[j/N]` confirmation for `-D`, `2` GitHub `git push origin --delete`, `3` both, `0` cancel with `Enter = 0`).

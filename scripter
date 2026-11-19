@@ -189,9 +189,9 @@ _is_visible() {
 interactive_menu() {
     while true; do
         ui_clear_screen
-        ui_header "SCRIPTER CONTROL PANEL" \
-            "System : ${CYAN}$(_os_display)${NC} | Arch: ${CYAN}${ARCH}${NC}" \
-            "PkgMgr : ${CYAN}${PKG_MGR}${NC} | Root: ${CYAN}${IS_ROOT}${NC}"
+        printf "%b=== SCRIPTER HUB ===%b (%b%s%b | %b%s%b | %b%s%b)\n" \
+            "${GREEN}${BOLD}" "${NC}" "${CYAN}" "$(_os_display)" "${NC}" "${CYAN}" "${ARCH}" "${NC}" "${CYAN}" "${PKG_MGR}" "${NC}"
+        ui_divider
 
         local cat_idx=1
         local item_idx=1
@@ -206,14 +206,27 @@ interactive_menu() {
                 _is_visible "$req" && visible+=("$entry")
             done
             [[ ${#visible[@]} -eq 0 ]] && return 0
-            ui_section "${cat_idx}. ${title}"
+            printf "%b%d. %s%b\n" "${YELLOW}${BOLD}" "$cat_idx" "$title" "${NC}"
             ((cat_idx++))
+            local col=0 left_str=""
             for entry in "${visible[@]}"; do
                 IFS='|' read -r req mod desc <<< "$entry"
-                ui_item "$item_idx" "$mod [$req]" "$desc"
+                local label
+                printf -v label "%2d) %-16s [%s]" "$item_idx" "$mod" "$req"
                 MENU_TARGETS+=("+$mod")
                 ((item_idx++))
+                if [[ $col -eq 0 ]]; then
+                    left_str="$label"
+                    col=1
+                else
+                    printf "  %b%-30s%b  %b%s%b\n" "${WHITE}" "$left_str" "${NC}" "${WHITE}" "$label" "${NC}"
+                    col=0
+                    left_str=""
+                fi
             done
+            if [[ $col -eq 1 ]]; then
+                printf "  %b%s%b\n" "${WHITE}" "$left_str" "${NC}"
+            fi
         }
 
         _render_cat "DEVELOPMENT & OPS" \
@@ -243,13 +256,8 @@ interactive_menu() {
             "MAC|imagemaster|Image batch & EXIF tools" \
             "MAC|karaokemaster|CDG & karaoke organizer"
 
-        ui_section "${cat_idx}. UTILITIES & ONDERHOUD"
-        ui_item "P" "Make Persistent"   "Configure shell alias/PATH for $OS_TYPE"
-        ui_item "D" "Dependency Center" "Check, install or update tools"
-        ui_item "H" "Help & CLI"        "Show available +switches"
-        ui_item "X" "Exit"              ""
-
-        printf "\n"
+        printf "%b%d. UTILITIES:%b %bP)%b Persist | %bD)%b Deps | %bH)%b Help | %bX)%b Exit\n" \
+            "${YELLOW}${BOLD}" "$cat_idx" "${NC}" "${CYAN}" "${NC}" "${CYAN}" "${NC}" "${CYAN}" "${NC}" "${RED}" "${NC}"
         local choice=""
         if ! read -rp "Select option (X = Exit): " choice; then
             exit 0

@@ -598,74 +598,159 @@ opt_config() {
     return 0
 }
 
-git_menu() {
+_git_compact_header() {
+    local subtitle="$1"
+    local br="none"
+    git rev-parse --is-inside-work-tree >/dev/null 2>&1 && br="$(_current_branch)"
+    printf "%b=== GIT MASTER: %s ===%b (%b%s%b | Branch: %b%s%b)\n" \
+        "${GREEN}${BOLD}" "$subtitle" "${NC}" "${CYAN}" "${OS_TYPE}" "${NC}" "${YELLOW}" "${br}" "${NC}"
+    ui_divider
+}
+
+git_sub_status() {
     while true; do
         ui_clear_screen
-        local br="none"
-        git rev-parse --is-inside-work-tree >/dev/null 2>&1 && br="$(_current_branch)"
-        ui_header "GIT MASTER CONTROL PANEL" "System : ${CYAN}${OS_TYPE}${NC}" "Branch : ${YELLOW}${br}${NC}"
-
-        ui_section "A. INFO & INSPECTIE"
+        _git_compact_header "STATUS, DIFF & LOG"
         ui_item "1" "Status & Branch Info"   "Status + last 5 commits"
         ui_item "2" "Pending Changes (Diff)" "Unstaged & staged diff"
         ui_item "3" "Commit History (Tree)"  "Graph log"
         ui_item "4" "Compare with Remote"    "Local vs origin"
-
-        ui_section "B. BRANCHING & DEVELOPMENT"
-        ui_item "5"  "Start Feature/AI Branch" "feature/, fix/, ai/, refactor/"
-        ui_item "6"  "Switch / Checkout"       "Local & remote branches"
-        ui_item "7"  "Quick Commit & Push"     "Preview, add, commit, push"
-        ui_item "8"  "Sync / Pull"             "Safe rebase or merge"
-        ui_item "9"  "Squash & Clean Branch"   "Squash feature commits"
-        ui_item "10" "Prepare UAT / Staging"   "Merge to uat"
-        ui_item "11" "Merge Fix & Cleanup"     "Merge fix/* & delete"
-        ui_item "12" "Release Tag & Push"      "Annotated tag + push"
-        ui_item "13" "Merge Active -> Main"    "Merge, push & safe branch cleanup"
-
-        ui_section "C. CLEANUP & MAINTENANCE"
-        ui_item "14" "Prune Gone Branches"     "fetch --prune + delete [gone]"
-        ui_item "15" "Delete Branch"           "Local & optional origin"
-        ui_item "16" "Backup Snapshot Point"   "Create backup/timestamp branch"
-        ui_item "17" "Restore Backup Point"    "Checkout backup branch"
-
-        ui_section "D. FIX & EMERGENCY RECOVERY"
-        ui_item "18" "Stash / Pull / Pop"      "Safe update with dirty tree"
-        ui_item "19" "Undo Last Commit (Soft)" "reset --soft HEAD~1"
-        ui_item "20" "Revert Older Commit"     "Safe git revert"
-        ui_item "21" "Force Sync"              "reset --hard or --force-with-lease"
-        ui_item "22" "Emergency Recovery"      "Abort, index.lock, reflog"
-        ui_item "23" "Untrack / Forget File"   "rm --cached + .gitignore"
-        ui_item "24" "Config & Token Setup"    "user.name / user.email"
-        ui_item "0"  "Terug"                   ""
-
+        ui_item "0" "Terug"                  ""
         printf "\n"
         local c=""
         ui_read_menu_choice c "Choice"
         case "$c" in
-            1)  ui_run_safe "Status & Branch Info" opt_status ;;
-            2)  ui_run_safe "Pending Changes (Diff)" opt_diff ;;
-            3)  ui_run_safe "Commit History (Tree)" opt_tree ;;
-            4)  ui_run_safe "Compare with Remote" opt_compare ;;
-            5)  ui_run_safe "Start Feature/AI Branch" opt_start_branch ;;
-            6)  ui_run_safe "Switch / Checkout" opt_checkout ;;
-            7)  ui_run_safe "Quick Commit & Push" opt_quick_commit_push ;;
-            8)  ui_run_safe "Sync / Pull" opt_sync_pull ;;
-            9)  ui_run_safe "Squash & Clean Branch" opt_squash ;;
-            10) ui_run_safe "Prepare UAT / Staging" opt_prepare_uat ;;
-            11) ui_run_safe "Merge Fix & Cleanup" opt_merge_fix ;;
-            12) ui_run_safe "Release Tag & Push" opt_release_tag ;;
-            13) ui_run_safe "Merge Active -> Main" opt_merge_to_main ;;
-            14) ui_run_safe "Prune Gone Branches" opt_prune ;;
-            15) ui_run_safe "Delete Branch" opt_delete_branch ;;
-            16) ui_run_safe "Backup Snapshot Point" opt_backup ;;
-            17) ui_run_safe "Restore Backup Point" opt_restore_backup ;;
-            18) ui_run_safe "Stash / Pull / Pop" opt_stash_pull_pop ;;
-            19) ui_run_safe "Undo Last Commit" opt_undo_last ;;
-            20) ui_run_safe "Revert Older Commit" opt_revert_commit ;;
-            21) ui_run_safe "Force Sync" opt_force_sync ;;
-            22) ui_run_safe "Emergency Recovery" opt_emergency_recovery ;;
-            23) ui_run_safe "Untrack / Forget File" opt_untrack ;;
-            24) ui_run_safe "Config & Token Setup" opt_config ;;
+            1) ui_run_safe "Status & Branch Info" opt_status ;;
+            2) ui_run_safe "Pending Changes (Diff)" opt_diff ;;
+            3) ui_run_safe "Commit History (Tree)" opt_tree ;;
+            4) ui_run_safe "Compare with Remote" opt_compare ;;
+            0|q|Q) break ;;
+            *) ui_warn "Invalid choice."; ui_pause ;;
+        esac
+    done
+}
+
+git_sub_workflow() {
+    while true; do
+        ui_clear_screen
+        _git_compact_header "DAGELIJKSE WORKFLOW"
+        ui_item "1" "Quick Commit & Push"    "Preview, add, commit, push"
+        ui_item "2" "Sync / Pull"            "Safe rebase or merge"
+        ui_item "3" "Stash / Pull / Pop"     "Safe update with dirty tree"
+        ui_item "0" "Terug"                  ""
+        printf "\n"
+        local c=""
+        ui_read_menu_choice c "Choice"
+        case "$c" in
+            1) ui_run_safe "Quick Commit & Push" opt_quick_commit_push ;;
+            2) ui_run_safe "Sync / Pull" opt_sync_pull ;;
+            3) ui_run_safe "Stash / Pull / Pop" opt_stash_pull_pop ;;
+            0|q|Q) break ;;
+            *) ui_warn "Invalid choice."; ui_pause ;;
+        esac
+    done
+}
+
+git_sub_branches() {
+    while true; do
+        ui_clear_screen
+        _git_compact_header "BRANCHES & MERGING"
+        ui_item "1" "Start Feature/AI Branch" "feature/, fix/, ai/, refactor/"
+        ui_item "2" "Switch / Checkout"       "Local & remote branches"
+        ui_item "3" "Squash & Clean Branch"   "Squash feature commits"
+        ui_item "4" "Prepare UAT / Staging"   "Merge to uat"
+        ui_item "5" "Merge Fix & Cleanup"     "Merge fix/* & delete"
+        ui_item "6" "Merge Active -> Main"    "Merge, push & safe branch cleanup"
+        ui_item "7" "Delete Branch"           "Local & optional origin"
+        ui_item "0" "Terug"                   ""
+        printf "\n"
+        local c=""
+        ui_read_menu_choice c "Choice"
+        case "$c" in
+            1) ui_run_safe "Start Feature/AI Branch" opt_start_branch ;;
+            2) ui_run_safe "Switch / Checkout" opt_checkout ;;
+            3) ui_run_safe "Squash & Clean Branch" opt_squash ;;
+            4) ui_run_safe "Prepare UAT / Staging" opt_prepare_uat ;;
+            5) ui_run_safe "Merge Fix & Cleanup" opt_merge_fix ;;
+            6) ui_run_safe "Merge Active -> Main" opt_merge_to_main ;;
+            7) ui_run_safe "Delete Branch" opt_delete_branch ;;
+            0|q|Q) break ;;
+            *) ui_warn "Invalid choice."; ui_pause ;;
+        esac
+    done
+}
+
+git_sub_recovery() {
+    while true; do
+        ui_clear_screen
+        _git_compact_header "STASH & HERSTEL"
+        ui_item "1" "Undo Last Commit (Soft)" "reset --soft HEAD~1"
+        ui_item "2" "Revert Older Commit"     "Safe git revert"
+        ui_item "3" "Force Sync"              "reset --hard or --force-with-lease"
+        ui_item "4" "Emergency Recovery"      "Abort, index.lock, reflog"
+        ui_item "5" "Backup Snapshot Point"   "Create backup/timestamp branch"
+        ui_item "6" "Restore Backup Point"    "Checkout backup branch"
+        ui_item "7" "Untrack / Forget File"   "rm --cached + .gitignore"
+        ui_item "0" "Terug"                   ""
+        printf "\n"
+        local c=""
+        ui_read_menu_choice c "Choice"
+        case "$c" in
+            1) ui_run_safe "Undo Last Commit" opt_undo_last ;;
+            2) ui_run_safe "Revert Older Commit" opt_revert_commit ;;
+            3) ui_run_safe "Force Sync" opt_force_sync ;;
+            4) ui_run_safe "Emergency Recovery" opt_emergency_recovery ;;
+            5) ui_run_safe "Backup Snapshot Point" opt_backup ;;
+            6) ui_run_safe "Restore Backup Point" opt_restore_backup ;;
+            7) ui_run_safe "Untrack / Forget File" opt_untrack ;;
+            0|q|Q) break ;;
+            *) ui_warn "Invalid choice."; ui_pause ;;
+        esac
+    done
+}
+
+git_sub_remotes() {
+    while true; do
+        ui_clear_screen
+        _git_compact_header "REMOTES, TAGS & ONDERHOUD"
+        ui_item "1" "Release Tag & Push"      "Annotated tag + push"
+        ui_item "2" "Prune Gone Branches"     "fetch --prune + delete [gone]"
+        ui_item "3" "Compare with Remote"     "Local vs origin"
+        ui_item "0" "Terug"                   ""
+        printf "\n"
+        local c=""
+        ui_read_menu_choice c "Choice"
+        case "$c" in
+            1) ui_run_safe "Release Tag & Push" opt_release_tag ;;
+            2) ui_run_safe "Prune Gone Branches" opt_prune ;;
+            3) ui_run_safe "Compare with Remote" opt_compare ;;
+            0|q|Q) break ;;
+            *) ui_warn "Invalid choice."; ui_pause ;;
+        esac
+    done
+}
+
+git_menu() {
+    while true; do
+        ui_clear_screen
+        _git_compact_header "HOOFDMENU"
+        ui_item "1" "Status, Diff & Log"       "Status, Diff, History, Compare"
+        ui_item "2" "Dagelijkse Workflow"      "Commit & Push, Sync/Pull, Stash"
+        ui_item "3" "Branches & Merging"       "Start, Switch, Merge, Main, Delete"
+        ui_item "4" "Stash & Herstel"          "Undo, Revert, Force, Backup, Untrack"
+        ui_item "5" "Remotes, Tags & Onderhoud" "Release Tag, Prune, Compare"
+        ui_item "6" "Config & Token Setup"     "user.name / user.email / token"
+        ui_item "0" "Terug"                    "Naar scripter hoofdmenu"
+        printf "\n"
+        local c=""
+        ui_read_menu_choice c "Choice"
+        case "$c" in
+            1) git_sub_status ;;
+            2) git_sub_workflow ;;
+            3) git_sub_branches ;;
+            4) git_sub_recovery ;;
+            5) git_sub_remotes ;;
+            6) ui_run_safe "Config & Token Setup" opt_config ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
