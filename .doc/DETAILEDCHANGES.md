@@ -2,6 +2,11 @@
 
 ## Unreleased (`shellscripts` branch)
 
+### `gitmaster` Option 15 (`Delete Branch`) Numbered Selection & Scope Menu (`modules/common/git/gitmaster.sh`)
+- Extracted shared `_collect_branches()` helper for both Option 6 (`opt_checkout`) and Option 15 (`opt_delete_branch`) with `git fetch --all --prune` and `[LOKAAL]` / `[REMOTE - origin]` / `[LOKAAL + REMOTE]` tags (Bash 3.2+ & QNAP compatible).
+- Updated `opt_delete_branch` to display numbered branches (`1..N`) with `* [HUIDIG - beschermd]` and `[BESCHERMD]` markers, block deletion of active/`main`/`master` branches, and present a follow-up menu (`1` local `git branch -d` with explicit `[j/N]` confirmation for `-D`, `2` GitHub `git push origin --delete`, `3` both, `0` cancel with `Enter = 0`).
+- **Verification (macOS & QNAP simulation)**: Verified `bash -n modules/common/git/gitmaster.sh`, `./scripter -g --help`, `OS_TYPE=QNAP ./scripter -g --help`, and `./scripter -g delete-branch` numbered listing + `Enter = 0` cancellation.
+
 ### Main Menu Exit (`X`/`x` + `clear`, No `Enter` Default) (`scripter`, `AGENTS.md`)
 - **`scripter`**: Replaced `0) Afsluiten (Exit)` in `interactive_menu()` with `X) Exit`; empty `Enter` now reloads the main menu instead of exiting, and `X`/`x` clears the terminal (`ui_clear_screen` + `clear`) and exits with code `0`. Submenus and modules retain `0) Terug` with `Enter = 0` (`ui_read_menu_choice`).
 - **`AGENTS.md`**: Documented the split between main menu (`X`/`x` Exit, no `Enter` default, `clear` on exit) and submenus/modules (`0) Terug`, `Enter = 0`).

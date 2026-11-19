@@ -109,45 +109,67 @@ opt_start_branch() {
     git checkout -b "${prefix}${bname}"
 }
 
-opt_checkout() {
-    _require_repo || return 1
+_collect_branches() {
     git fetch --all --prune >/dev/null 2>&1 || true
     local local_branches remote_branches
     local_branches="$(git branch --format='%(refname:short)' 2>/dev/null)"
     remote_branches="$(git branch -r --format='%(refname:short)' 2>/dev/null | grep -v 'HEAD' | sed 's|^origin/||')"
 
-    local branches=() tags=()
+    BRANCH_LIST=()
+    BRANCH_HAS_LOCAL=()
+    BRANCH_HAS_REMOTE=()
+    BRANCH_TAGS=()
+
     local b
     while IFS= read -r b; do
         [[ -z "$b" ]] && continue
-        branches+=("$b")
-        tags+=("LOKAAL")
+        BRANCH_LIST+=("$b")
+        BRANCH_HAS_LOCAL+=("1")
+        BRANCH_HAS_REMOTE+=("0")
+        BRANCH_TAGS+=("LOKAAL")
     done <<< "$local_branches"
 
     while IFS= read -r b; do
         [[ -z "$b" ]] && continue
-        local exists=0 lb
-        for lb in "${branches[@]}"; do
-            [[ "$lb" == "$b" ]] && { exists=1; break; }
+        local i found=0
+        for ((i=0; i<${#BRANCH_LIST[@]}; i++)); do
+            if [[ "${BRANCH_LIST[$i]}" == "$b" ]]; then
+                BRANCH_HAS_REMOTE[$i]="1"
+                BRANCH_TAGS[$i]="LOKAAL + REMOTE"
+                found=1
+                break
+            fi
         done
-        if [[ "$exists" -eq 0 ]]; then
-            branches+=("$b")
-            tags+=("REMOTE - origin")
+        if [[ "$found" -eq 0 ]]; then
+            BRANCH_LIST+=("$b")
+            BRANCH_HAS_LOCAL+=("0")
+            BRANCH_HAS_REMOTE+=("1")
+            BRANCH_TAGS+=("REMOTE - origin")
         fi
     done <<< "$remote_branches"
+}
 
-    if [[ ${#branches[@]} -eq 0 ]]; then
+opt_checkout() {
+    _require_repo || return 1
+    _collect_branches
+
+    if [[ ${#BRANCH_LIST[@]} -eq 0 ]]; then
         ui_warn "Geen branches gevonden."
         return 0
     fi
 
+    local cur; cur="$(_current_branch)"
     ui_section "SWITCH / CHECKOUT BRANCH"
     local i
-    for ((i=0; i<${#branches[@]}; i++)); do
-        if [[ "${tags[$i]}" == "LOKAAL" ]]; then
-            printf "  %b%2d)%b %-34s %b[%s]%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "${branches[$i]}" "${GREEN}" "${tags[$i]}" "${NC}"
+    for ((i=0; i<${#BRANCH_LIST[@]}; i++)); do
+        local marker=" "
+        [[ "${BRANCH_LIST[$i]}" == "$cur" ]] && marker="*"
+        if [[ "${BRANCH_TAGS[$i]}" == "LOKAAL" ]]; then
+            printf "  %b%2d)%b %s %-33s %b[%s]%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "$marker" "${BRANCH_LIST[$i]}" "${GREEN}" "${BRANCH_TAGS[$i]}" "${NC}"
+        elif [[ "${BRANCH_TAGS[$i]}" == "LOKAAL + REMOTE" ]]; then
+            printf "  %b%2d)%b %s %-33s %b[%s]%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "$marker" "${BRANCH_LIST[$i]}" "${CYAN}" "${BRANCH_TAGS[$i]}" "${NC}"
         else
-            printf "  %b%2d)%b %-34s %b[%s]%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "${branches[$i]}" "${YELLOW}" "${tags[$i]}" "${NC}"
+            printf "  %b%2d)%b %s %-33s %b[%s]%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "$marker" "${BRANCH_LIST[$i]}" "${YELLOW}" "${BRANCH_TAGS[$i]}" "${NC}"
         fi
     done
     printf "  %b 0)%b Terug / Annuleren\n\n" "${CYAN}${BOLD}" "${NC}"
@@ -158,10 +180,10 @@ opt_checkout() {
         ui_cancel_msg
         return 0
     fi
-    if [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 1 && "$num" -le ${#branches[@]} ]]; then
+    if [[ "$num" =~ ^[0-9]+$ ]] && [[ "$num" -ge 1 && "$num" -le ${#BRANCH_LIST[@]} ]]; then
         local idx=$((num-1))
-        local target="${branches[$idx]}"
-        if [[ "${tags[$idx]}" == "REMOTE - origin" ]]; then
+        local target="${BRANCH_LIST[$idx]}"
+        if [[ "${BRANCH_TAGS[$idx]}" == "REMOTE - origin" ]]; then
             git checkout -b "$target" "origin/$target" 2>/dev/null || git checkout "$target"
         else
             git checkout "$target"
@@ -342,22 +364,137 @@ opt_prune() {
     fi
 }
 
+_delete_local_branch() {
+    local target="$1"
+    if ! git branch -d "$target"; then
+        local ans=""
+        read -rp "Branch '$target' is nog niet volledig gemerged. Force delete met 'git branch -D'? [j/N]: " ans
+        if [[ "$ans" =~ ^[jJyY]$ ]]; then
+            git branch -D "$target"
+        else
+            ui_cancel_msg
+            return 1
+        fi
+    fi
+    return 0
+}
+
 opt_delete_branch() {
     _require_repo || return 1
+    _collect_branches
+
+    if [[ ${#BRANCH_LIST[@]} -eq 0 ]]; then
+        ui_warn "Geen branches gevonden."
+        return 0
+    fi
+
     local cur; cur="$(_current_branch)"
-    echo "  0) Cancel / Terug"
-    git branch
-    local b=""
-    ui_prompt_input b "Branch to delete" || return 0
-    [[ -z "$b" ]] && { ui_cancel_msg; return 0; }
-    if [[ "$b" == "main" || "$b" == "master" || "$b" == "$cur" ]]; then
-        ui_err "Refusing to delete protected/active branch '$b' without manual override."
+    ui_section "DELETE BRANCH"
+    local i
+    for ((i=0; i<${#BRANCH_LIST[@]}; i++)); do
+        local bname="${BRANCH_LIST[$i]}"
+        local tag="${BRANCH_TAGS[$i]}"
+        local extra=""
+        local marker=" "
+        if [[ "$bname" == "$cur" ]]; then
+            marker="*"
+            extra=" ${RED}[HUIDIG - beschermd]${NC}"
+        elif [[ "$bname" == "main" || "$bname" == "master" ]]; then
+            extra=" ${RED}[BESCHERMD]${NC}"
+        fi
+
+        if [[ "$tag" == "LOKAAL" ]]; then
+            printf "  %b%2d)%b %s %-33s %b[%s]%b%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "$marker" "$bname" "${GREEN}" "$tag" "${NC}" "$extra"
+        elif [[ "$tag" == "LOKAAL + REMOTE" ]]; then
+            printf "  %b%2d)%b %s %-33s %b[%s]%b%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "$marker" "$bname" "${CYAN}" "$tag" "${NC}" "$extra"
+        else
+            printf "  %b%2d)%b %s %-33s %b[%s]%b%b\n" "${CYAN}${BOLD}" "$((i+1))" "${NC}" "$marker" "$bname" "${YELLOW}" "$tag" "${NC}" "$extra"
+        fi
+    done
+    printf "  %b 0)%b Terug (Annuleren)\n\n" "${CYAN}${BOLD}" "${NC}"
+
+    local sel=""
+    ui_read_menu_choice sel "Select branch (nummer of naam)"
+    if [[ "$sel" == "0" || "$sel" == "q" || "$sel" == "Q" ]]; then
+        ui_cancel_msg
+        return 0
+    fi
+
+    local target="" is_local="0" is_remote="0"
+    if [[ "$sel" =~ ^[0-9]+$ ]] && [[ "$sel" -ge 1 && "$sel" -le ${#BRANCH_LIST[@]} ]]; then
+        local idx=$((sel-1))
+        target="${BRANCH_LIST[$idx]}"
+        is_local="${BRANCH_HAS_LOCAL[$idx]}"
+        is_remote="${BRANCH_HAS_REMOTE[$idx]}"
+    else
+        target="$sel"
+        for ((i=0; i<${#BRANCH_LIST[@]}; i++)); do
+            if [[ "${BRANCH_LIST[$i]}" == "$target" ]]; then
+                is_local="${BRANCH_HAS_LOCAL[$i]}"
+                is_remote="${BRANCH_HAS_REMOTE[$i]}"
+                break
+            fi
+        done
+        if [[ "$is_local" == "0" && "$is_remote" == "0" ]]; then
+            git show-ref --verify --quiet "refs/heads/$target" 2>/dev/null && is_local="1"
+            git show-ref --verify --quiet "refs/remotes/origin/$target" 2>/dev/null && is_remote="1"
+        fi
+        if [[ "$is_local" == "0" && "$is_remote" == "0" ]]; then
+            ui_err "Branch '$target' niet gevonden."
+            return 1
+        fi
+    fi
+
+    if [[ "$target" == "$cur" || "$target" == "main" || "$target" == "master" ]]; then
+        ui_err "De actieve branch of hoofdbranch (main/master) kan niet worden verwijderd."
         return 1
     fi
-    git branch -d "$b" || { ui_confirm_action "Not merged. Force delete (-D)?" && git branch -D "$b"; }
-    if ui_confirm_action "Also delete on origin?"; then
-        git push origin --delete "$b" 2>/dev/null || true
-    fi
+
+    ui_section "VERWIJDERACTIE VOOR: $target"
+    echo -e "  Locatie: Lokaal=$([[ "$is_local" == "1" ]] && echo "${GREEN}Ja${NC}" || echo "${DIM}Nee${NC}") | GitHub (origin)=$([[ "$is_remote" == "1" ]] && echo "${GREEN}Ja${NC}" || echo "${DIM}Nee${NC}")"
+    echo ""
+    [[ "$is_local" == "1" ]]  && echo "  1) Alleen LOKAAL verwijderen (veilige check: git branch -d)"
+    [[ "$is_remote" == "1" ]] && echo "  2) Alleen op GITHUB verwijderen (git push origin --delete)"
+    [[ "$is_local" == "1" && "$is_remote" == "1" ]] && echo "  3) Zowel LOKAAL als op GITHUB verwijderen"
+    echo "  0) Annuleren (Enter = 0)"
+    echo ""
+
+    local action=""
+    ui_read_menu_choice action "Keuze"
+    case "$action" in
+        0|q|Q)
+            ui_cancel_msg
+            return 0
+            ;;
+        1)
+            if [[ "$is_local" != "1" ]]; then
+                ui_warn "Branch '$target' bestaat niet lokaal."
+                return 1
+            fi
+            _delete_local_branch "$target" && ui_ok "Lokale branch '$target' verwijderd."
+            ;;
+        2)
+            if [[ "$is_remote" != "1" ]]; then
+                ui_warn "Branch '$target' bestaat niet op GitHub (origin)."
+                return 1
+            fi
+            git push origin --delete "$target" && ui_ok "Remote branch 'origin/$target' verwijderd."
+            ;;
+        3)
+            if [[ "$is_local" == "1" ]]; then
+                _delete_local_branch "$target" || return 1
+                ui_ok "Lokale branch '$target' verwijderd."
+            fi
+            if [[ "$is_remote" == "1" ]]; then
+                git push origin --delete "$target" || return 1
+                ui_ok "Remote branch 'origin/$target' verwijderd."
+            fi
+            ;;
+        *)
+            ui_warn "Ongeldige keuze."
+            return 1
+            ;;
+    esac
     return 0
 }
 
