@@ -398,6 +398,22 @@ alias_cleanup_legacy_macos() {
     ui_ok "Verouderde regels opgeschoond in $prof."
 }
 
+alias_activate_profile() {
+    local prof="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
+    if [[ ! -f "$prof" ]]; then
+        ui_warn "Profielbestand bestaat nog niet: $prof"
+        return 1
+    fi
+    # shellcheck disable=SC1090
+    source "$prof" 2>/dev/null || true
+    ui_ok "Profiel geladen in scripter-sessie: $prof"
+    ui_info "Voer in je actieve terminal uit om direct te activeren:"
+    printf "  %bsource %s%b\n" "${CYAN}${BOLD}" "$prof" "${NC}"
+    if command -v pbcopy >/dev/null 2>&1; then
+        printf "source %s" "$prof" | pbcopy 2>/dev/null && ui_info "(Commando gekopieerd naar klembord)"
+    fi
+}
+
 alias_manager_menu() {
     ACTIVE_ALIAS_PROFILE="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
     while true; do
@@ -418,9 +434,11 @@ alias_manager_menu() {
         ui_item "3" "Wijzigen / Verwijderen"  "Op nummer (met .bak backup)"
         if os_is_qnap; then
             ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle QNAP files"
+            ui_item "5" "Aliassen Activeren"  "source $prof"
         elif os_is_macos; then
             ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle macOS files"
             ui_item "5" "Legacy Opschonen"    "Ruim macscripts/ & scriptmaster op"
+            ui_item "6" "Aliassen Activeren"  "source $prof"
         fi
         ui_item "0" "Terug"                   ""
         printf "\n"
@@ -437,7 +455,14 @@ alias_manager_menu() {
                     alias_select_profile_macos
                 fi
                 ;;
-            5) os_is_macos && ui_run_safe "Legacy Opschonen" alias_cleanup_legacy_macos ;;
+            5)
+                if os_is_qnap; then
+                    ui_run_safe "Aliassen Activeren" alias_activate_profile
+                elif os_is_macos; then
+                    ui_run_safe "Legacy Opschonen" alias_cleanup_legacy_macos
+                fi
+                ;;
+            6) os_is_macos && ui_run_safe "Aliassen Activeren" alias_activate_profile ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
