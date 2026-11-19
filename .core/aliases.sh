@@ -55,6 +55,12 @@ _alias_read_list() {
             cmd="${cmd#\"}"; cmd="${cmd%\"}"
             ALIAS_NAMES+=("$name")
             ALIAS_CMDS+=("$cmd")
+        elif [[ "$line" == *"() { if [ -n \"\$1\" ]; then cd \""*"\" && "* ]]; then
+            name="${line%%()*}"
+            cmd="${line#*else cd \"}"
+            cmd="${cmd%%\" && *}"
+            ALIAS_NAMES+=("$name")
+            ALIAS_CMDS+=("__dirnav__:${cmd}")
         fi
     done < "$prof"
 }
@@ -76,7 +82,13 @@ _alias_write_list() {
         printf "\n# >>> scripter-aliases >>>\n"
         local i
         for ((i=0; i<${#ALIAS_NAMES[@]}; i++)); do
-            printf "alias %s='%s'\n" "${ALIAS_NAMES[$i]}" "${ALIAS_CMDS[$i]}"
+            if [[ "${ALIAS_CMDS[$i]}" == __dirnav__:* ]]; then
+                local dpath="${ALIAS_CMDS[$i]#__dirnav__:}"
+                dpath="${dpath%/}"
+                printf "%s() { if [ -n \"\$1\" ]; then cd \"%s/\$1\"; else cd \"%s\" && { _d=\$(ls -d */ 2>/dev/null | sed 's:/*\$::' | grep -vx '@Recycle'); [ -n \"\$_d\" ] && command ls -Cd \$_d; }; fi; }\n" "${ALIAS_NAMES[$i]}" "$dpath" "$dpath"
+            else
+                printf "alias %s='%s'\n" "${ALIAS_NAMES[$i]}" "${ALIAS_CMDS[$i]}"
+            fi
         done
         printf "# <<< scripter-aliases <<<\n"
     } >> "$tmp"
@@ -149,9 +161,9 @@ alias_presets_wizard() {
             read -e -p "TST path [$def_tst] (Enter=default, 0=cancel): " p_tst
             [[ "$p_tst" == "0" ]] && { ui_cancel_msg; return 0; }
             p_tst="${p_tst:-$def_tst}"
-            _alias_upsert "$prof" "prd" "cd \"${p_prd}\" && ls -la"
-            _alias_upsert "$prof" "dev" "cd \"${p_dev}\" && ls -la"
-            _alias_upsert "$prof" "tst" "cd \"${p_tst}\" && ls -la"
+            _alias_upsert "$prof" "prd" "__dirnav__:${p_prd%/}"
+            _alias_upsert "$prof" "dev" "__dirnav__:${p_dev%/}"
+            _alias_upsert "$prof" "tst" "__dirnav__:${p_tst%/}"
             ;;
         2)
             if os_is_qnap; then
@@ -218,8 +230,8 @@ alias_add_custom() {
     read -e -p "Target path or command (Tab for path autocomplete, 0=cancel): " cmd
     [[ "$cmd" == "0" || -z "$cmd" ]] && { ui_cancel_msg; return 0; }
     if [[ -d "$cmd" ]]; then
-        if ui_confirm_action "'$cmd' is a directory. Navigate with 'cd \"$cmd\" && ls -la'?"; then
-            cmd="cd \"${cmd}\" && ls -la"
+        if ui_confirm_action "'$cmd' is a directory. Navigate with directory listing & optional subdir?"; then
+            cmd="__dirnav__:${cmd%/}"
         fi
     fi
     if [[ "$name" == "python3" ]]; then
@@ -386,6 +398,22 @@ alias_cleanup_legacy_macos() {
     ui_ok "Verouderde regels opgeschoond in $prof."
 }
 
+alias_activate_profile() {
+    local prof="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
+    if [[ ! -f "$prof" ]]; then
+        ui_warn "Profielbestand bestaat nog niet: $prof"
+        return 1
+    fi
+    # shellcheck disable=SC1090
+    source "$prof" 2>/dev/null || true
+    ui_ok "Profiel geladen in scripter-sessie: $prof"
+    ui_info "Voer in je actieve terminal uit om direct te activeren:"
+    printf "  %bsource %s%b\n" "${CYAN}${BOLD}" "$prof" "${NC}"
+    if command -v pbcopy >/dev/null 2>&1; then
+        printf "source %s" "$prof" | pbcopy 2>/dev/null && ui_info "(Commando gekopieerd naar klembord)"
+    fi
+}
+
 alias_manager_menu() {
     ACTIVE_ALIAS_PROFILE="${ACTIVE_ALIAS_PROFILE:-$(_alias_profile)}"
     while true; do
@@ -406,9 +434,11 @@ alias_manager_menu() {
         ui_item "3" "Wijzigen / Verwijderen"  "Op nummer (met .bak backup)"
         if os_is_qnap; then
             ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle QNAP files"
+            ui_item "5" "Aliassen Activeren"  "source $prof"
         elif os_is_macos; then
             ui_item "4" "Doelbestand Kiezen"  "Wissel profiel / scan alle macOS files"
             ui_item "5" "Legacy Opschonen"    "Ruim macscripts/ & scriptmaster op"
+            ui_item "6" "Aliassen Activeren"  "source $prof"
         fi
         ui_item "0" "Terug"                   ""
         printf "\n"
@@ -425,7 +455,14 @@ alias_manager_menu() {
                     alias_select_profile_macos
                 fi
                 ;;
-            5) os_is_macos && ui_run_safe "Legacy Opschonen" alias_cleanup_legacy_macos ;;
+            5)
+                if os_is_qnap; then
+                    ui_run_safe "Aliassen Activeren" alias_activate_profile
+                elif os_is_macos; then
+                    ui_run_safe "Legacy Opschonen" alias_cleanup_legacy_macos
+                fi
+                ;;
+            6) os_is_macos && ui_run_safe "Aliassen Activeren" alias_activate_profile ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
