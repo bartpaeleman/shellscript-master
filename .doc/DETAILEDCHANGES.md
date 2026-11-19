@@ -2,6 +2,11 @@
 
 ## Unreleased (`shellscripts` branch)
 
+### Main Menu Exit (`X`/`x` + `clear`, No `Enter` Default) (`scripter`, `AGENTS.md`)
+- **`scripter`**: Replaced `0) Afsluiten (Exit)` in `interactive_menu()` with `X) Exit`; empty `Enter` now reloads the main menu instead of exiting, and `X`/`x` clears the terminal (`ui_clear_screen` + `clear`) and exits with code `0`. Submenus and modules retain `0) Terug` with `Enter = 0` (`ui_read_menu_choice`).
+- **`AGENTS.md`**: Documented the split between main menu (`X`/`x` Exit, no `Enter` default, `clear` on exit) and submenus/modules (`0) Terug`, `Enter = 0`).
+- **Verification (macOS & QNAP simulation)**: Verified `bash -n scripter .core/ui.sh`, `./scripter --help`, and both `./scripter` and `OS_TYPE=QNAP ./scripter` (`X) Exit` shown, empty `Enter` reloads menu without exiting, `X`/`x` clears and exits `0`).
+
 ### Interactive Configuration Submenus for `geotrace` & `recon` (`cybermaster` & `networkmaster`)
 - **`modules/macos/security/CYBER/geotrace` & `modules/macos/security/NETWORK/geotrace.sh`**: Added backwards-compatible CLI flags `-m`/`--max-hops`, `-w`/`--wait`, `-q`/`--queries`, `--resolve` (reverse-DNS per hop), `--json` (JSON array output), and `-h`/`--help`.
 - **`modules/macos/security/cybermaster` & `modules/macos/security/NETWORK/network-master.sh`**: Replaced raw argument/target prompts in `geotrace` (Option 6 in `cybermaster`, Option 7 / Connectivity Option 3 in `networkmaster`) and `recon` (Option 7 in `cybermaster`) with interactive configuration & launch submenus using `.core/ui.sh` (`ui_clear_screen`, `ui_header`, `ui_item`, `ui_read_menu_choice` with `Enter = 0`, `ui_run_safe`), featuring live command preview, `[AAN]`/`[UIT]` boolean toggles, parameter validation, `R) Reset`, and a self-explanatory `Extra CLI-flags` help prompt (showing filtered `--help` flags, examples, `-`/`clear` to wipe, and `Enter`/`0` to return).

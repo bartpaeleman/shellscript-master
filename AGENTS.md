@@ -20,7 +20,9 @@
 - De centrale entrypoint is `./scripter` (voorheen `master`).
 - **Menu-Indeling & OS-Filtering**: Functionele hoofdcategorieën met strikte verberging van niet-ondersteunde modules en lege categorieën op het actieve OS (`OS_TYPE`, `os_is_macos`, `os_is_qnap`, `os_is_linux`), dynamische sectie-/itemnummering zonder gaten, en zichtbare platformtags (`[UNI]`, `[MAC]`, `[QNAP]`).
 - **CLI Switches & Shortcodes**: Nieuwe modules vereisen een unieke short-flag (`-x`), `+`-switches (`+naam`, `+kort`), argument-doorvoer naar de module en update van `scripter --help` en `README.md`.
-- **Universele `0`-navigatie**: Elk menu gebruikt `0` als primaire terug-/afsluitoptie (`0) Terug` in submenus, `0) Afsluiten (Exit)` in het hoofdmenu), elke menu-prompt gebruikt `ui_read_menu_choice` zodat `Enter` standaard `0` is (tekst-/pad-prompts met expliciete default uitgezonderd), en elke invoer-prompt accepteert `0` (of `q`) om te annuleren.
+- **Hoofdmenu vs. Submenu-navigatie**:
+  - **Hoofdmenu (`scripter`)**: Gebruikt `X` / `x` (`X) Exit`) om af te sluiten, **zonder** `Enter`-default (een lege `Enter` herlaadt het hoofdmenu om per ongeluk afsluiten te voorkomen), gevolgd door `clear` bij verlaten.
+  - **Submenu's & Modules**: Gebruiken `0` als primaire terug-optie (`0) Terug`), waarbij `ui_read_menu_choice` lege invoer (`Enter`) standaard omzet naar `0`, en invoer-prompts accepteren `0` (of `q`) om te annuleren.
 - **Centrale Try/Catch (`ui_run_safe`)**: Externe commando's en kritieke acties in interactieve menu's worden gewikkeld in `ui_run_safe` (`.core/ui.sh`) zodat fouten netjes worden opgevangen zonder dat `scripter` crasht.
 - **QNAP / BusyBox Compatibiliteit & Persistentie**:
   - Vermijd `read -e` of macOS-only commando's in `.core/` of QNAP-code (gebruik `ui_read_path` uit `.core/ui.sh`).
