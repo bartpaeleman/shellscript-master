@@ -7,9 +7,12 @@ bind '"\t": "\C-l\e\e"' 2>/dev/null || true
 # Master Wrapper Script for CYBER toolset
 
 CYBER_MASTER_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/CYBER" && pwd)"
+SCRIPTER_ROOT="$(cd "$CYBER_MASTER_DIR/../../../.." && pwd)"
 PYTHON_WRAPPER="$CYBER_MASTER_DIR/common/run_python.sh"
 ALIASES="$CYBER_MASTER_DIR/common/aliases.sh"
 
+# shellcheck source=/dev/null
+[[ -f "$SCRIPTER_ROOT/.core/ui.sh" ]] && source "$SCRIPTER_ROOT/.core/ui.sh"
 source "$ALIASES"
 
 show_help() {
@@ -68,6 +71,270 @@ get_target() {
     return 0
 }
 
+_cyber_toggle_badge() {
+    if [[ "$1" == "true" ]]; then
+        printf "${GREEN}[AAN]${NC}"
+    else
+        printf "${DIM}[UIT]${NC}"
+    fi
+}
+
+configure_and_run_geotrace() {
+    local target="${1:-}"
+    local max_hops="30"
+    local wait_sec="2"
+    local queries="1"
+    local do_resolve="false"
+    local output_json="false"
+    local extra_flags=""
+
+    while true; do
+        local -a cmd_args=("-m" "$max_hops" "-w" "$wait_sec" "-q" "$queries")
+        [[ "$do_resolve" == "true" ]] && cmd_args+=("--resolve")
+        [[ "$output_json" == "true" ]] && cmd_args+=("--json")
+        if [[ -n "$extra_flags" ]]; then
+            # shellcheck disable=SC2206
+            cmd_args+=($extra_flags)
+        fi
+        local target_disp="${target:-<niet ingesteld>}"
+        local cmd_preview="geotrace ${cmd_args[*]} ${target:-<target>}"
+
+        ui_clear_screen
+        ui_header "GEOTRACE — CONFIGURATIE & START" \
+            "Target   : ${CYAN}${target_disp}${NC}" \
+            "Opties   : Hops=${CYAN}${max_hops}${NC} | Wait=${CYAN}${wait_sec}s${NC} | Queries=${CYAN}${queries}${NC} | DNS=$(_cyber_toggle_badge "$do_resolve") | JSON=$(_cyber_toggle_badge "$output_json")" \
+            "Commando : ${DIM}${cmd_preview}${NC}"
+
+        ui_item "1" "Uitvoeren / Starten (Run)"    "Start geotrace met bovenstaande opties"
+        ui_item "2" "Target / Doelwit instellen"   "IP, domein of host (${target_disp})"
+        ui_item "3" "Max hops (-m)"                "Maximaal aantal hops (huidige: ${max_hops})"
+        ui_item "4" "Timeout per hop (-w)"         "Wachttijd in seconden (huidige: ${wait_sec}s)"
+        ui_item "5" "Probes per hop (-q)"          "Aantal queries per hop (huidige: ${queries})"
+        ui_item "6" "Reverse-DNS (--resolve)"      "$(_cyber_toggle_badge "$do_resolve") Toon hostnames per hop"
+        ui_item "7" "JSON output (--json)"         "$(_cyber_toggle_badge "$output_json") Output als JSON"
+        ui_item "8" "Extra CLI-flags"              "Huidige: ${extra_flags:-geen}"
+        ui_item "R" "Reset naar standaardwaarden"  "Herstel alle opties naar defaults"
+        ui_item "0" "Terug (Annuleren)"            ""
+        printf "\n"
+
+        local sub_choice=""
+        ui_read_menu_choice sub_choice "Keuze"
+        case "$sub_choice" in
+            1)
+                if [[ -z "$target" ]]; then
+                    if ! ui_prompt_input target "Target IP, domein of host"; then
+                        continue
+                    fi
+                fi
+                local -a run_args=("-m" "$max_hops" "-w" "$wait_sec" "-q" "$queries")
+                [[ "$do_resolve" == "true" ]] && run_args+=("--resolve")
+                [[ "$output_json" == "true" ]] && run_args+=("--json")
+                if [[ -n "$extra_flags" ]]; then
+                    # shellcheck disable=SC2206
+                    run_args+=($extra_flags)
+                fi
+                run_args+=("$target")
+                ui_run_safe "geotrace $target" "$CYBER_MASTER_DIR/geotrace" "${run_args[@]}"
+                ;;
+            2)
+                local new_target=""
+                if ui_prompt_input new_target "Target IP, domein of host" "$target"; then
+                    target="$new_target"
+                fi
+                ;;
+            3)
+                local new_hops=""
+                if ui_prompt_input new_hops "Max hops (1-255)" "$max_hops"; then
+                    if [[ "$new_hops" =~ ^[0-9]+$ ]] && [[ "$new_hops" -ge 1 && "$new_hops" -le 255 ]]; then
+                        max_hops="$new_hops"
+                    else
+                        ui_warn "Ongeldig aantal hops: '$new_hops'"
+                        ui_pause
+                    fi
+                fi
+                ;;
+            4)
+                local new_wait=""
+                if ui_prompt_input new_wait "Timeout in seconden (1-30)" "$wait_sec"; then
+                    if [[ "$new_wait" =~ ^[0-9]+$ ]] && [[ "$new_wait" -ge 1 && "$new_wait" -le 30 ]]; then
+                        wait_sec="$new_wait"
+                    else
+                        ui_warn "Ongeldige timeout: '$new_wait'"
+                        ui_pause
+                    fi
+                fi
+                ;;
+            5)
+                local new_q=""
+                if ui_prompt_input new_q "Probes per hop (1-10)" "$queries"; then
+                    if [[ "$new_q" =~ ^[0-9]+$ ]] && [[ "$new_q" -ge 1 && "$new_q" -le 10 ]]; then
+                        queries="$new_q"
+                    else
+                        ui_warn "Ongeldig aantal probes: '$new_q'"
+                        ui_pause
+                    fi
+                fi
+                ;;
+            6)
+                [[ "$do_resolve" == "true" ]] && do_resolve="false" || do_resolve="true"
+                ;;
+            7)
+                [[ "$output_json" == "true" ]] && output_json="false" || output_json="true"
+                ;;
+            8)
+                local new_extra=""
+                if ui_prompt_input new_extra "Extra CLI-flags (leeg = geen)" "$extra_flags"; then
+                    extra_flags="$new_extra"
+                fi
+                ;;
+            [rR])
+                max_hops="30"; wait_sec="2"; queries="1"
+                do_resolve="false"; output_json="false"; extra_flags=""
+                ;;
+            0|q|Q)
+                return 0
+                ;;
+            *)
+                ui_warn "Ongeldige keuze."
+                ui_pause
+                ;;
+        esac
+    done
+}
+
+configure_and_run_recon() {
+    local target="${1:-}"
+    local mode="domain"
+    local do_ping="false"
+    local do_trace="false"
+    local do_ssl="false"
+    local do_cloudflare="false"
+    local do_confirm="false"
+    local output_lvl="normal"
+    local extra_flags=""
+
+    while true; do
+        local -a cmd_args=()
+        [[ "$mode" == "ip" ]] && cmd_args+=("-ip")
+        [[ "$do_ping" == "true" ]] && cmd_args+=("--ping")
+        [[ "$do_trace" == "true" ]] && cmd_args+=("--trace")
+        [[ "$do_ssl" == "true" ]] && cmd_args+=("--ssl")
+        [[ "$do_cloudflare" == "true" ]] && cmd_args+=("--cloudflare")
+        [[ "$do_confirm" == "true" ]] && cmd_args+=("--confirm")
+        [[ "$output_lvl" == "verbose" ]] && cmd_args+=("--verbose")
+        [[ "$output_lvl" == "silent" ]] && cmd_args+=("--silent")
+        if [[ -n "$extra_flags" ]]; then
+            # shellcheck disable=SC2206
+            cmd_args+=($extra_flags)
+        fi
+        if [[ "$mode" == "vendor" ]]; then
+            cmd_args+=("--vendor" "${target:-<bedrijf>}")
+        else
+            cmd_args+=("${target:-<target>}")
+        fi
+
+        local target_disp="${target:-<niet ingesteld>}"
+        local cmd_preview="recon ${cmd_args[*]}"
+
+        ui_clear_screen
+        ui_header "RECON — CONFIGURATIE & START" \
+            "Target   : ${CYAN}${target_disp}${NC} | Type: ${CYAN}${mode}${NC} | Output: ${CYAN}${output_lvl}${NC}" \
+            "Features : Ping=$(_cyber_toggle_badge "$do_ping") Trace=$(_cyber_toggle_badge "$do_trace") SSL=$(_cyber_toggle_badge "$do_ssl") CF=$(_cyber_toggle_badge "$do_cloudflare") Confirm=$(_cyber_toggle_badge "$do_confirm")" \
+            "Commando : ${DIM}${cmd_preview}${NC}"
+
+        ui_item "1"  "Uitvoeren / Starten (Run)"      "Start recon met bovenstaande opties"
+        ui_item "2"  "Target / Doelwit instellen"     "Domein, IP of bedrijfsnaam (${target_disp})"
+        ui_item "3"  "Doeltype wisselen"              "domain -> -ip -> --vendor (huidige: ${mode})"
+        ui_item "4"  "Ping test (--ping)"             "$(_cyber_toggle_badge "$do_ping") ICMP bereikbaarheidstest"
+        ui_item "5"  "Traceroute (--trace)"           "$(_cyber_toggle_badge "$do_trace") Pad-analyse (30s timeout)"
+        ui_item "6"  "SSL analyse (--ssl)"            "$(_cyber_toggle_badge "$do_ssl") Certificaat & TLS inspectie"
+        ui_item "7"  "CloudFlare check (--cloudflare)" "$(_cyber_toggle_badge "$do_cloudflare") CDN/WAF detectie"
+        ui_item "8"  "Vendor confirm (--confirm)"     "$(_cyber_toggle_badge "$do_confirm") Eerste gevonden domein kiezen"
+        ui_item "9"  "Alles activeren (--all)"        "Zet Ping, Trace, SSL en CloudFlare AAN"
+        ui_item "10" "Output-niveau wisselen"         "normaal -> verbose -> silent (huidige: ${output_lvl})"
+        ui_item "11" "Extra CLI-flags"                "Huidige: ${extra_flags:-geen}"
+        ui_item "R"  "Reset naar standaardwaarden"    "Herstel alle opties naar defaults"
+        ui_item "0"  "Terug (Annuleren)"              ""
+        printf "\n"
+
+        local sub_choice=""
+        ui_read_menu_choice sub_choice "Keuze"
+        case "$sub_choice" in
+            1)
+                if [[ -z "$target" ]]; then
+                    if ! ui_prompt_input target "Target (domein, IP of vendor)"; then
+                        continue
+                    fi
+                fi
+                local -a run_args=()
+                [[ "$mode" == "ip" ]] && run_args+=("-ip")
+                [[ "$do_ping" == "true" ]] && run_args+=("--ping")
+                [[ "$do_trace" == "true" ]] && run_args+=("--trace")
+                [[ "$do_ssl" == "true" ]] && run_args+=("--ssl")
+                [[ "$do_cloudflare" == "true" ]] && run_args+=("--cloudflare")
+                [[ "$do_confirm" == "true" ]] && run_args+=("--confirm")
+                [[ "$output_lvl" == "verbose" ]] && run_args+=("--verbose")
+                [[ "$output_lvl" == "silent" ]] && run_args+=("--silent")
+                if [[ -n "$extra_flags" ]]; then
+                    # shellcheck disable=SC2206
+                    run_args+=($extra_flags)
+                fi
+                if [[ "$mode" == "vendor" ]]; then
+                    run_args+=("--vendor" "$target")
+                else
+                    run_args+=("$target")
+                fi
+                ui_run_safe "recon $target" "$CYBER_MASTER_DIR/recon" "${run_args[@]}"
+                ;;
+            2)
+                local new_target=""
+                if ui_prompt_input new_target "Target (domein, IP of vendor)" "$target"; then
+                    target="$new_target"
+                fi
+                ;;
+            3)
+                case "$mode" in
+                    domain) mode="ip" ;;
+                    ip)     mode="vendor" ;;
+                    *)      mode="domain" ;;
+                esac
+                ;;
+            4) [[ "$do_ping" == "true" ]] && do_ping="false" || do_ping="true" ;;
+            5) [[ "$do_trace" == "true" ]] && do_trace="false" || do_trace="true" ;;
+            6) [[ "$do_ssl" == "true" ]] && do_ssl="false" || do_ssl="true" ;;
+            7) [[ "$do_cloudflare" == "true" ]] && do_cloudflare="false" || do_cloudflare="true" ;;
+            8) [[ "$do_confirm" == "true" ]] && do_confirm="false" || do_confirm="true" ;;
+            9)
+                do_ping="true"; do_trace="true"; do_ssl="true"; do_cloudflare="true"
+                ;;
+            10)
+                case "$output_lvl" in
+                    normal)  output_lvl="verbose" ;;
+                    verbose) output_lvl="silent" ;;
+                    *)       output_lvl="normal" ;;
+                esac
+                ;;
+            11)
+                local new_extra=""
+                if ui_prompt_input new_extra "Extra CLI-flags (leeg = geen)" "$extra_flags"; then
+                    extra_flags="$new_extra"
+                fi
+                ;;
+            [rR])
+                mode="domain"; do_ping="false"; do_trace="false"; do_ssl="false"
+                do_cloudflare="false"; do_confirm="false"; output_lvl="normal"; extra_flags=""
+                ;;
+            0|q|Q)
+                return 0
+                ;;
+            *)
+                ui_warn "Ongeldige keuze."
+                ui_pause
+                ;;
+        esac
+    done
+}
+
 run_interactive() {
     while true; do
         clear
@@ -87,7 +354,8 @@ run_interactive() {
         echo -e "\n${YELLOW}0) Terug${NC}"
         echo -e "${CYAN}================================================${NC}"
 
-        read -p "Select action [0]: " choice; choice="${choice:-0}"
+        local choice=""
+        ui_read_menu_choice choice "Select action"
 
         case "$choice" in
             1)
@@ -106,14 +374,10 @@ run_interactive() {
                 if get_target; then threatctx "$target" pdf; pause; fi
                 ;;
             6)
-                read -e -p "Enter arguments for geotrace: " args
-                eval "$CYBER_MASTER_DIR/geotrace $args"
-                pause
+                configure_and_run_geotrace
                 ;;
             7)
-                read -e -p "Enter arguments for recon: " args
-                eval "$CYBER_MASTER_DIR/recon $args"
-                pause
+                configure_and_run_recon
                 ;;
             8)
                 if get_eml_file; then mailreport "$eml_file"; pause; fi
@@ -160,10 +424,18 @@ case "$COMMAND" in
         fi
         ;;
     geotrace)
-        "$CYBER_MASTER_DIR/geotrace" "$@"
+        if [[ $# -eq 0 ]]; then
+            configure_and_run_geotrace
+        else
+            "$CYBER_MASTER_DIR/geotrace" "$@"
+        fi
         ;;
     recon)
-        "$CYBER_MASTER_DIR/recon" "$@"
+        if [[ $# -eq 0 ]]; then
+            configure_and_run_recon
+        else
+            "$CYBER_MASTER_DIR/recon" "$@"
+        fi
         ;;
     threatctx)
         threatctx "$@"

@@ -2,6 +2,11 @@
 
 ## Unreleased (`shellscripts` branch)
 
+### Interactive Configuration Submenus for `geotrace` & `recon` (`cybermaster` & `networkmaster`)
+- **`modules/macos/security/CYBER/geotrace` & `modules/macos/security/NETWORK/geotrace.sh`**: Added backwards-compatible CLI flags `-m`/`--max-hops`, `-w`/`--wait`, `-q`/`--queries`, `--resolve` (reverse-DNS per hop), `--json` (JSON array output), and `-h`/`--help`.
+- **`modules/macos/security/cybermaster` & `modules/macos/security/NETWORK/network-master.sh`**: Replaced raw argument/target prompts in `geotrace` (Option 6 in `cybermaster`, Option 7 / Connectivity Option 3 in `networkmaster`) and `recon` (Option 7 in `cybermaster`) with interactive configuration & launch submenus using `.core/ui.sh` (`ui_clear_screen`, `ui_header`, `ui_item`, `ui_read_menu_choice` with `Enter = 0`, `ui_run_safe`), featuring live command preview, `[AAN]`/`[UIT]` boolean toggles, parameter validation, and `R) Reset`.
+- **Documentation & Verification (macOS)**: Updated `README.md`; verified `bash -n`, `./scripter -n --help`, `geotrace --help`, and both interactive submenus on macOS.
+
 ### Self-Healing Python Dependencies (`deps_ensure_python`) & `cybermaster` Output Dispatcher (`cyber_output_report`)
 - **`.core/deps.sh` & `AGENTS.md`**: Added `deps_ensure_python` for fast, idempotent just-in-time import checking in `.dep/.venv/bin/python3` with `.dep/.venv.lock` (`mkdir` + `trap` cleanup) and automatic installation from `.dep/requirements.txt` when packages are missing. Connected to `cybermaster` (`run_python.sh`) and `intelmaster` (`threat-intel.sh`).
 - **`modules/macos/security/CYBER/common/aliases.sh`, `modules/macos/security/cybermaster`, `README.md`**: Added `cyber_output_report` and `cyber_select_output_mode` (`1` screen-only via `glow`/`bat`/`rich.markdown` [default], `2` `.md` file export, `3` both, `0` cancel). Wired to `threatctx` (Option 3), `mailreport` (Option 8), and `cybermaster report` (`md`).
