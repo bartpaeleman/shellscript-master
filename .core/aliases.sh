@@ -55,10 +55,10 @@ _alias_read_list() {
             cmd="${cmd#\"}"; cmd="${cmd%\"}"
             ALIAS_NAMES+=("$name")
             ALIAS_CMDS+=("$cmd")
-        elif [[ "$line" == *"() { if [ -n \"\$1\" ]; then cd \""*"\" && ls -1d */ 2>/dev/null; fi; }" ]]; then
+        elif [[ "$line" == *"() { if [ -n \"\$1\" ]; then cd \""*"\" && "* ]]; then
             name="${line%%()*}"
             cmd="${line#*else cd \"}"
-            cmd="${cmd%%\" && ls -1d \*/ 2>/dev/null; fi; \}}"
+            cmd="${cmd%%\" && *}"
             ALIAS_NAMES+=("$name")
             ALIAS_CMDS+=("__dirnav__:${cmd}")
         fi
@@ -85,7 +85,7 @@ _alias_write_list() {
             if [[ "${ALIAS_CMDS[$i]}" == __dirnav__:* ]]; then
                 local dpath="${ALIAS_CMDS[$i]#__dirnav__:}"
                 dpath="${dpath%/}"
-                printf "%s() { if [ -n \"\$1\" ]; then cd \"%s/\$1\"; else cd \"%s\" && ls -1d */ 2>/dev/null; fi; }\n" "${ALIAS_NAMES[$i]}" "$dpath" "$dpath"
+                printf "%s() { if [ -n \"\$1\" ]; then cd \"%s/\$1\"; else cd \"%s\" && { _d=\$(ls -d */ 2>/dev/null | sed 's:/*\$::' | grep -vx '@Recycle'); [ -n \"\$_d\" ] && command ls -Cd \$_d; }; fi; }\n" "${ALIAS_NAMES[$i]}" "$dpath" "$dpath"
             else
                 printf "alias %s='%s'\n" "${ALIAS_NAMES[$i]}" "${ALIAS_CMDS[$i]}"
             fi
