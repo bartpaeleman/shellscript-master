@@ -247,12 +247,17 @@ interactive_menu() {
         ui_item "P" "Make Persistent"   "Configure shell alias/PATH for $OS_TYPE"
         ui_item "D" "Dependency Center" "Check, install or update tools"
         ui_item "H" "Help & CLI"        "Show available +switches"
-        ui_item "0" "Afsluiten (Exit)"  ""
+        ui_item "X" "Exit"              ""
 
         printf "\n"
         local choice=""
-        ui_read_menu_choice choice "Select option"
+        if ! read -rp "Select option (X = Exit): " choice; then
+            exit 0
+        fi
+        choice="${choice#"${choice%%[![:space:]]*}"}"
+        choice="${choice%"${choice##*[![:space:]]}"}"
         case "$choice" in
+            "") continue ;;
             d|D) deps_menu ;;
             p|P)
                 persist_system
@@ -264,7 +269,11 @@ interactive_menu() {
                 show_help
                 read -rp "Press [Enter] to return to menu..." _
                 ;;
-            0|q|Q|exit) exit 0 ;;
+            x|X)
+                ui_clear_screen
+                clear 2>/dev/null || true
+                exit 0
+                ;;
             *)
                 if [[ "$choice" =~ ^[0-9]+$ ]] && [[ "$choice" -ge 1 && "$choice" -le ${#MENU_TARGETS[@]} ]]; then
                     local target_mod="${MENU_TARGETS[$((choice-1))]}"

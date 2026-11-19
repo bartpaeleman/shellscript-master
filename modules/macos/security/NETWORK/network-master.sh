@@ -16,6 +16,9 @@ NC='\033[0m'
 BOLD='\033[1m'
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPTER_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+# shellcheck source=/dev/null
+[[ -f "$SCRIPTER_ROOT/.core/ui.sh" ]] && source "$SCRIPTER_ROOT/.core/ui.sh"
 
 # --- FUNCTIONS ---
 
@@ -34,14 +37,178 @@ check_cmd() {
 }
 
 # --- HELPER: GEOTRACE ---
-run_geotrace() {
-    read -p "Target IP/Domain: " target
-    if [[ -f "$SCRIPT_DIR/geotrace.sh" ]]; then
-        "$SCRIPT_DIR/geotrace.sh" "$target"
+_net_toggle_badge() {
+    if [[ "$1" == "true" ]]; then
+        printf "${GREEN}[AAN]${NC}"
     else
-        echo -e "${RED}geotrace.sh script not found in $SCRIPT_DIR${NC}"
+        printf "${DIM}[UIT]${NC}"
     fi
-    pause
+}
+
+_net_prompt_extra_flags() {
+    local __var_name="$1"
+    local __current="$2"
+
+    echo ""
+    echo -e "${CYAN}${BOLD}--- Extra CLI-flags voor geotrace ---${NC}"
+    echo "Hier kun je optionele extra command-line flags meegeven die niet als losse schakelaar in het menu staan."
+    echo ""
+    echo -e "${YELLOW}Beschikbare overige/referentie-vlaggen (geotrace.sh --help):${NC}"
+    local __help_lines
+    __help_lines="$("$SCRIPT_DIR/geotrace.sh" --help 2>/dev/null | grep -E '^[[:space:]]*(-|--)' | grep -vE '(--max-hops|--wait|--queries|--resolve|--json)' | head -n 6 || true)"
+    if [[ -n "$__help_lines" ]]; then
+        echo "$__help_lines"
+    else
+        echo "  (Alle standaard-vlaggen staan al als losse schakelaar in het menu; --help blijft beschikbaar.)"
+    fi
+    echo ""
+    echo -e "${GREEN}Voorbeelden:${NC} --help  |  -m 15 -w 1  |  --resolve --json"
+    echo -e "${DIM}Huidige extra flags: ${__current:-geen}${NC}"
+    echo ""
+    local __val=""
+    read -rp "Typ extra flags ('-' of 'clear' = wissen, Enter / '0' = terug): " __val
+    case "$__val" in
+        ""|0|q|Q)
+            return 0
+            ;;
+        -|clear|CLEAR)
+            printf -v "$__var_name" '%s' ""
+            return 0
+            ;;
+        *)
+            printf -v "$__var_name" '%s' "$__val"
+            return 0
+            ;;
+    esac
+}
+
+run_geotrace() {
+    if [[ ! -f "$SCRIPT_DIR/geotrace.sh" ]]; then
+        echo -e "${RED}geotrace.sh script not found in $SCRIPT_DIR${NC}"
+        pause
+        return 1
+    fi
+
+    local target="${1:-}"
+    local max_hops="30"
+    local wait_sec="2"
+    local queries="1"
+    local do_resolve="false"
+    local output_json="false"
+    local extra_flags=""
+
+    while true; do
+        local -a cmd_args=("-m" "$max_hops" "-w" "$wait_sec" "-q" "$queries")
+        [[ "$do_resolve" == "true" ]] && cmd_args+=("--resolve")
+        [[ "$output_json" == "true" ]] && cmd_args+=("--json")
+        if [[ -n "$extra_flags" ]]; then
+            # shellcheck disable=SC2206
+            cmd_args+=($extra_flags)
+        fi
+        local target_disp="${target:-<niet ingesteld>}"
+        local cmd_preview="geotrace.sh ${cmd_args[*]} ${target:-<target>}"
+
+        ui_clear_screen
+        local -a header_lines=(
+            "Target   : ${CYAN}${target_disp}${NC}"
+            "Opties   : Hops=${CYAN}${max_hops}${NC} | Wait=${CYAN}${wait_sec}s${NC} | Queries=${CYAN}${queries}${NC} | DNS=$(_net_toggle_badge "$do_resolve") | JSON=$(_net_toggle_badge "$output_json")"
+        )
+        [[ -n "$extra_flags" ]] && header_lines+=("Extra    : ${CYAN}${extra_flags}${NC}")
+        header_lines+=("Commando : ${DIM}${cmd_preview}${NC}")
+        ui_header "GEOTRACE — CONFIGURATIE & START" "${header_lines[@]}"
+
+        ui_item "1" "Uitvoeren / Starten (Run)"    "Start geotrace met bovenstaande opties"
+        ui_item "2" "Target / Doelwit instellen"   "IP, domein of host (${target_disp})"
+        ui_item "3" "Max hops (-m)"                "Maximaal aantal hops (huidige: ${max_hops})"
+        ui_item "4" "Timeout per hop (-w)"         "Wachttijd in seconden (huidige: ${wait_sec}s)"
+        ui_item "5" "Probes per hop (-q)"          "Aantal queries per hop (huidige: ${queries})"
+        ui_item "6" "Reverse-DNS (--resolve)"      "$(_net_toggle_badge "$do_resolve") Toon hostnames per hop"
+        ui_item "7" "JSON output (--json)"         "$(_net_toggle_badge "$output_json") Output als JSON"
+        ui_item "8" "Extra CLI-flags"              "(optioneel — handmatige vlaggen toevoegen, bijv. --help; nu: ${extra_flags:-geen})"
+        ui_item "R" "Reset naar standaardwaarden"  "Herstel alle opties naar defaults"
+        ui_item "0" "Terug (Annuleren)"            ""
+        printf "\n"
+
+        local sub_choice=""
+        ui_read_menu_choice sub_choice "Keuze"
+        case "$sub_choice" in
+            1)
+                if [[ -z "$target" ]]; then
+                    if ! ui_prompt_input target "Target IP, domein of host"; then
+                        continue
+                    fi
+                fi
+                local -a run_args=("-m" "$max_hops" "-w" "$wait_sec" "-q" "$queries")
+                [[ "$do_resolve" == "true" ]] && run_args+=("--resolve")
+                [[ "$output_json" == "true" ]] && run_args+=("--json")
+                if [[ -n "$extra_flags" ]]; then
+                    # shellcheck disable=SC2206
+                    run_args+=($extra_flags)
+                fi
+                run_args+=("$target")
+                ui_run_safe "geotrace $target" "$SCRIPT_DIR/geotrace.sh" "${run_args[@]}"
+                ;;
+            2)
+                local new_target=""
+                if ui_prompt_input new_target "Target IP, domein of host" "$target"; then
+                    target="$new_target"
+                fi
+                ;;
+            3)
+                local new_hops=""
+                if ui_prompt_input new_hops "Max hops (1-255)" "$max_hops"; then
+                    if [[ "$new_hops" =~ ^[0-9]+$ ]] && [[ "$new_hops" -ge 1 && "$new_hops" -le 255 ]]; then
+                        max_hops="$new_hops"
+                    else
+                        ui_warn "Ongeldig aantal hops: '$new_hops'"
+                        ui_pause
+                    fi
+                fi
+                ;;
+            4)
+                local new_wait=""
+                if ui_prompt_input new_wait "Timeout in seconden (1-30)" "$wait_sec"; then
+                    if [[ "$new_wait" =~ ^[0-9]+$ ]] && [[ "$new_wait" -ge 1 && "$new_wait" -le 30 ]]; then
+                        wait_sec="$new_wait"
+                    else
+                        ui_warn "Ongeldige timeout: '$new_wait'"
+                        ui_pause
+                    fi
+                fi
+                ;;
+            5)
+                local new_q=""
+                if ui_prompt_input new_q "Probes per hop (1-10)" "$queries"; then
+                    if [[ "$new_q" =~ ^[0-9]+$ ]] && [[ "$new_q" -ge 1 && "$new_q" -le 10 ]]; then
+                        queries="$new_q"
+                    else
+                        ui_warn "Ongeldig aantal probes: '$new_q'"
+                        ui_pause
+                    fi
+                fi
+                ;;
+            6)
+                [[ "$do_resolve" == "true" ]] && do_resolve="false" || do_resolve="true"
+                ;;
+            7)
+                [[ "$output_json" == "true" ]] && output_json="false" || output_json="true"
+                ;;
+            8)
+                _net_prompt_extra_flags extra_flags "$extra_flags"
+                ;;
+            [rR])
+                max_hops="30"; wait_sec="2"; queries="1"
+                do_resolve="false"; output_json="false"; extra_flags=""
+                ;;
+            0|q|Q)
+                return 0
+                ;;
+            *)
+                ui_warn "Ongeldige keuze."
+                ui_pause
+                ;;
+        esac
+    done
 }
 
 # --- SUBMENU: INTERFACES & ROUTING ---

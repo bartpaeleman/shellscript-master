@@ -38,6 +38,19 @@ MACOS_PYTHON_DEPS=(
     "PIL:pillow:Image processing (imagemaster)"
     "pypdf:pypdf:PDF metadata/ebooks (rename_ebooks)"
     "bs4:beautifulsoup4:HTML parsing (intelmaster)"
+    "rich:rich:Terminal UI formatting (cybermaster)"
+    "typer:typer:CLI framework (cybermaster)"
+    "httpx:httpx:Async HTTP client (cybermaster)"
+    "scapy:scapy:Packet manipulation (cybermaster)"
+    "mailparser:mail-parser:Email parser (cybermaster)"
+    "pydantic:pydantic:Data validation (cybermaster)"
+    "authheaders:authheaders:SPF/DKIM/DMARC verification (cybermaster)"
+    "dkim:dkimpy:DKIM verification (cybermaster)"
+    "dateutil:python-dateutil:Date parsing (cybermaster, intelmaster)"
+    "tldextract:tldextract:Domain extraction (cybermaster)"
+    "cryptography:cryptography:TLS/crypto utilities (cybermaster)"
+    "jinja2:jinja2:Report templating (cybermaster)"
+    "weasyprint:weasyprint:PDF report generation (cybermaster)"
 )
 
 _dep_color() {
@@ -160,9 +173,18 @@ deps_install_missing() {
         done
     fi
 
+    if [[ ! -x "$ROOT_DIR/.dep/.venv/bin/python3" ]] && command -v python3 >/dev/null 2>&1; then
+        echo "Creating central Python virtual environment in $ROOT_DIR/.dep/.venv..."
+        python3 -m venv "$ROOT_DIR/.dep/.venv" || echo "Warning: failed to create central .venv"
+    fi
+
     local pip_cmd; pip_cmd="$(_pip_bin)"
     local py; py="$(_py_bin)"
     if [[ -n "$py" && -n "$pip_cmd" ]]; then
+        if [[ -f "$ROOT_DIR/.dep/requirements.txt" ]]; then
+            echo "Installing Python packages from .dep/requirements.txt..."
+            "$pip_cmd" install -q -r "$ROOT_DIR/.dep/requirements.txt" 2>/dev/null || echo "Warning: some packages from .dep/requirements.txt failed to install"
+        fi
         local imp pkg pdesc
         for entry in "${ACTIVE_PY[@]}"; do
             IFS=':' read -r imp pkg pdesc <<< "$entry"
@@ -195,6 +217,77 @@ deps_update_all() {
             "$pip_cmd" install --upgrade "$pkg" 2>/dev/null || true
         done
     fi
+}
+
+# Just-in-time, race-free self-healing helper for Python-dependent modules.
+# Usage: deps_ensure_python [import_name ...]
+deps_ensure_python() {
+    local py_bin="$ROOT_DIR/.dep/.venv/bin/python3"
+    local pip_bin="$ROOT_DIR/.dep/.venv/bin/pip"
+    local req_file="$ROOT_DIR/.dep/requirements.txt"
+    local lock_dir="$ROOT_DIR/.dep/.venv.lock"
+    local -a imports=("$@")
+
+    if [[ ${#imports[@]} -eq 0 ]]; then
+        imports=("requests" "yaml")
+    fi
+
+    # Fast-path: venv exists and all required imports succeed in one Python call
+    if [[ -x "$py_bin" ]] && "$py_bin" -c "import sys; [__import__(m) for m in sys.argv[1:]]" "${imports[@]}" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    echo "[INFO] Ontbrekende Python-dependencies gedetecteerd — automatisch installeren in .dep/.venv..." >&2
+
+    mkdir -p "$ROOT_DIR/.dep"
+    local waited=0
+    while ! mkdir "$lock_dir" 2>/dev/null; do
+        sleep 1
+        ((waited++))
+        if [[ $waited -ge 60 ]]; then
+            echo "[WARN] Lock timeout op $lock_dir; geforceerde voortzetting." >&2
+            rm -rf "$lock_dir" 2>/dev/null || true
+            mkdir "$lock_dir" 2>/dev/null || break
+        fi
+    done
+    trap 'rmdir "$lock_dir" 2>/dev/null || true' RETURN
+
+    # Re-check after acquiring lock in case another process finished installing
+    if [[ -x "$py_bin" ]] && "$py_bin" -c "import sys; [__import__(m) for m in sys.argv[1:]]" "${imports[@]}" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    if [[ ! -x "$py_bin" ]]; then
+        if ! command -v python3 >/dev/null 2>&1; then
+            echo "[ERR] python3 niet gevonden in PATH; kan .dep/.venv niet aanmaken." >&2
+            return 1
+        fi
+        python3 -m venv "$ROOT_DIR/.dep/.venv" >&2 || {
+            echo "[ERR] Aanmaken van $ROOT_DIR/.dep/.venv is mislukt." >&2
+            return 1
+        }
+    fi
+
+    if [[ -f "$req_file" ]]; then
+        "$pip_bin" install -q --disable-pip-version-check -r "$req_file" >&2 || {
+            echo "[ERR] Installatie vanuit $req_file is mislukt." >&2
+            return 1
+        }
+    fi
+
+    # Install any extra requested module names if still missing
+    local mod
+    for mod in "${imports[@]}"; do
+        if ! "$py_bin" -c "import $mod" >/dev/null 2>&1; then
+            "$pip_bin" install -q --disable-pip-version-check "$mod" >&2 || true
+        fi
+    done
+
+    if ! "$py_bin" -c "import sys; [__import__(m) for m in sys.argv[1:]]" "${imports[@]}" >/dev/null 2>&1; then
+        echo "[ERR] Niet alle vereiste Python-dependencies konden worden geladen: ${imports[*]}" >&2
+        return 1
+    fi
+    return 0
 }
 
 deps_menu() {

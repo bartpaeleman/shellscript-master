@@ -16,21 +16,43 @@ FINANCIAL_KEYWORDS = ["bank", "login", "secure", "auth", "finance", "crypto", "w
 BULLETPROOF_HOSTERS_AND_TOR = ["tor", "bulletproof", "floki", "shinjiru", "koddos", "veesp"]
 
 @app.command()
-def analyze():
+def analyze(
+    target: Optional[str] = typer.Option(None, "--target", "-t", help="Fallback target name when stdin is empty or minimal")
+):
     """
     Contextual Risk Scoring Engine.
     Reads a UnifiedSchema JSON object from stdin, calculates risk, and outputs to stdout.
+    Falls back to a minimal UnifiedSchema on empty/minimal input instead of failing.
     """
+    fallback_target = (target or "").strip() or "unknown"
+
     if sys.stdin.isatty():
-        logger.error("No input provided. Pipe a Unified JSON object via stdin.")
-        sys.exit(1)
+        logger.warning("No stdin pipe detected; generating fallback UnifiedSchema.")
+        schema = UnifiedSchema(
+            target=fallback_target,
+            risk_score=0,
+            risk_reasons=["No enrichment input provided (interactive/empty stdin fallback)"]
+        )
+        print(schema.model_dump_json())
+        return
 
     try:
         stdin_data = sys.stdin.read().strip()
         if not stdin_data:
-            logger.error("Empty input received.")
-            sys.exit(1)
+            logger.warning("Empty input received; generating fallback UnifiedSchema.")
+            schema = UnifiedSchema(
+                target=fallback_target,
+                risk_score=0,
+                risk_reasons=["Empty enrichment input received (fallback)"]
+            )
+            print(schema.model_dump_json())
+            return
+
         data = json.loads(stdin_data)
+        if not isinstance(data, dict):
+            raise ValueError("Input JSON must be an object")
+        if not data.get("target"):
+            data["target"] = fallback_target
         schema = UnifiedSchema(**data)
     except Exception as e:
         logger.error(f"Failed to parse stdin as JSON or validate schema: {e}")

@@ -2,6 +2,33 @@
 
 ## Unreleased (`shellscripts` branch)
 
+### `gitmaster` Option 15 (`Delete Branch`) Numbered Selection & Scope Menu (`modules/common/git/gitmaster.sh`)
+- Extracted shared `_collect_branches()` helper for both Option 6 (`opt_checkout`) and Option 15 (`opt_delete_branch`) with `git fetch --all --prune` and `[LOKAAL]` / `[REMOTE - origin]` / `[LOKAAL + REMOTE]` tags (Bash 3.2+ & QNAP compatible).
+- Updated `opt_delete_branch` to display numbered branches (`1..N`) with `* [HUIDIG - beschermd]` and `[BESCHERMD]` markers, block deletion of active/`main`/`master` branches, and present a follow-up menu (`1` local `git branch -d` with explicit `[j/N]` confirmation for `-D`, `2` GitHub `git push origin --delete`, `3` both, `0` cancel with `Enter = 0`).
+- **Verification (macOS & QNAP simulation)**: Verified `bash -n modules/common/git/gitmaster.sh`, `./scripter -g --help`, `OS_TYPE=QNAP ./scripter -g --help`, and `./scripter -g delete-branch` numbered listing + `Enter = 0` cancellation.
+
+### Main Menu Exit (`X`/`x` + `clear`, No `Enter` Default) (`scripter`, `AGENTS.md`)
+- **`scripter`**: Replaced `0) Afsluiten (Exit)` in `interactive_menu()` with `X) Exit`; empty `Enter` now reloads the main menu instead of exiting, and `X`/`x` clears the terminal (`ui_clear_screen` + `clear`) and exits with code `0`. Submenus and modules retain `0) Terug` with `Enter = 0` (`ui_read_menu_choice`).
+- **`AGENTS.md`**: Documented the split between main menu (`X`/`x` Exit, no `Enter` default, `clear` on exit) and submenus/modules (`0) Terug`, `Enter = 0`).
+- **Verification (macOS & QNAP simulation)**: Verified `bash -n scripter .core/ui.sh`, `./scripter --help`, and both `./scripter` and `OS_TYPE=QNAP ./scripter` (`X) Exit` shown, empty `Enter` reloads menu without exiting, `X`/`x` clears and exits `0`).
+
+### Interactive Configuration Submenus for `geotrace` & `recon` (`cybermaster` & `networkmaster`)
+- **`modules/macos/security/CYBER/geotrace` & `modules/macos/security/NETWORK/geotrace.sh`**: Added backwards-compatible CLI flags `-m`/`--max-hops`, `-w`/`--wait`, `-q`/`--queries`, `--resolve` (reverse-DNS per hop), `--json` (JSON array output), and `-h`/`--help`.
+- **`modules/macos/security/cybermaster` & `modules/macos/security/NETWORK/network-master.sh`**: Replaced raw argument/target prompts in `geotrace` (Option 6 in `cybermaster`, Option 7 / Connectivity Option 3 in `networkmaster`) and `recon` (Option 7 in `cybermaster`) with interactive configuration & launch submenus using `.core/ui.sh` (`ui_clear_screen`, `ui_header`, `ui_item`, `ui_read_menu_choice` with `Enter = 0`, `ui_run_safe`), featuring live command preview, `[AAN]`/`[UIT]` boolean toggles, parameter validation, `R) Reset`, and a self-explanatory `Extra CLI-flags` help prompt (showing filtered `--help` flags, examples, `-`/`clear` to wipe, and `Enter`/`0` to return).
+- **Documentation & Verification (macOS)**: Updated `README.md`; verified `bash -n`, `./scripter -n --help`, `geotrace --help`, and both interactive submenus (including `Extra CLI-flags` help screen via `./scripter -y` and `./scripter -n`) on macOS.
+
+### Self-Healing Python Dependencies (`deps_ensure_python`) & `cybermaster` Output Dispatcher (`cyber_output_report`)
+- **`.core/deps.sh` & `AGENTS.md`**: Added `deps_ensure_python` for fast, idempotent just-in-time import checking in `.dep/.venv/bin/python3` with `.dep/.venv.lock` (`mkdir` + `trap` cleanup) and automatic installation from `.dep/requirements.txt` when packages are missing. Connected to `cybermaster` (`run_python.sh`) and `intelmaster` (`threat-intel.sh`).
+- **`modules/macos/security/CYBER/common/aliases.sh`, `modules/macos/security/cybermaster`, `README.md`**: Added `cyber_output_report` and `cyber_select_output_mode` (`1` screen-only via `glow`/`bat`/`rich.markdown` [default], `2` `.md` file export, `3` both, `0` cancel). Wired to `threatctx` (Option 3), `mailreport` (Option 8), and `cybermaster report` (`md`).
+- **Verification (macOS)**: Verified `bash -n`, `python3 -m py_compile`, `./scripter -y --help`, and `cybermaster threatctx paeleman.com` in both Mode `1` (`MODE_1_OK`) and Mode `3` (`MODE_3_OK`).
+
+### `cybermaster` & `intelmaster` Central `.dep/.venv` Migration & `threatctx` Pipeline Fix
+- **`.dep/requirements.txt` & `.core/deps.sh`**: Created central `.dep/requirements.txt` combining `CYBER/requirements.txt`, `INTEL`/`core` Python dependencies, and `dnspython` (`requests`, `beautifulsoup4`, `rich`, `typer`, `httpx`, `scapy`, `mail-parser`, `pydantic`, `pyyaml`, `authheaders`, `dkimpy`, `python-dateutil`, `tldextract`, `cryptography`, `jinja2`, `weasyprint`, `dnspython`), and installed all packages into `.dep/.venv`. Updated `.core/deps.sh` (`MACOS_PYTHON_DEPS` and `deps_install_missing`) to create `.dep/.venv` and install `.dep/requirements.txt` automatically when missing.
+- **`modules/macos/security/CYBER/common/run_python.sh` & `modules/macos/security/INTEL/threat-intel.sh`**: Removed per-module `.venv` creation/activation and removed the bare system `python3` fallback in `threat-intel.sh`; both strictly require and invoke the repo-local `.dep/.venv/bin/python3` (initializing via `.core/deps.sh install` if missing).
+- **`modules/macos/security/CYBER/common/aliases.sh` & `modules/macos/security/cybermaster`**: Rewrote `threatctx` to run `enricher.py`, `risk_scorer.py`, and `reporter.py` sequentially via `mktemp` intermediate files with minimal-JSON fallback, and routed options 3 (`md`), 4 (`html`), and 5 (`pdf`) through `threatctx`.
+- **`modules/macos/security/CYBER/scoring/risk_scorer.py`**: Added `--target` option and graceful fallback to a valid minimal `UnifiedSchema` JSON on empty or interactive stdin instead of exiting with code `1` (`Empty input received`).
+- **Verification (macOS)**: Verified `.dep/.venv/bin/python3 -c "import httpx, typer, rich, dns, ..."` (`IMPORTS OK`), `./modules/macos/security/cybermaster threatctx paeleman.com` end-to-end (`report_paeleman.com.md` generated cleanly), and `risk_scorer.py` empty-stdin fallback.
+
 ### Core & Standards
 - **AGENTS.md**: Added Git sync policy, layered documentation (`CHANGELOG.md` vs `.doc/DETAILEDCHANGES.md`), release-locking, silent startup pre-check, OS-parity/anti-regression rules, and mandatory pre-commit verification.
 - **`.core/os_detect.sh`**: Added portable OS-abstraction wrappers (`os_sed_inplace`, `os_readlink_f`, `os_is_macos`, `os_is_qnap`, `os_is_linux`).
