@@ -26,9 +26,10 @@ show_help() {
     echo "  recon             Reconnaissance script for domain, ip, vendor."
     echo ""
     echo "Pipeline Wrappers:"
-    echo "  threatctx <target> Run the full enrichment, scoring, and reporting pipeline."
-    echo "  mhdr <file>        Extract key findings (IP, SPF, DKIM) from an email."
-    echo "  mailtrace <file>   Analyze an email and display the Terminal UI."
+    echo "  threatctx <target> [fmt] Run full enrichment, scoring, and reporting (md/html/pdf)."
+    echo "  mailreport <file>        Analyze an email and output a Markdown report."
+    echo "  mhdr <file>              Extract key findings (IP, SPF, DKIM) from an email."
+    echo "  mailtrace <file>         Analyze an email and display the Terminal UI."
     echo ""
     echo "Interactive:"
     echo "  interactive        Start the interactive wizard to guide you through tools."
@@ -82,6 +83,7 @@ run_interactive() {
         echo "5) Recon Domain/IP and Generate PDF Report"
         echo "6) Run geotrace"
         echo "7) Run recon"
+        echo "8) Email Analysis Markdown Report (.eml)"
         echo -e "\n${YELLOW}0) Terug${NC}"
         echo -e "${CYAN}================================================${NC}"
 
@@ -113,6 +115,9 @@ run_interactive() {
                 eval "$CYBER_MASTER_DIR/recon $args"
                 pause
                 ;;
+            8)
+                if get_eml_file; then mailreport "$eml_file"; pause; fi
+                ;;
             0|[xX]|[qQ])
                 echo -e "${GREEN}Exiting...${NC}"
                 clear
@@ -143,7 +148,16 @@ case "$COMMAND" in
         "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/scoring/risk_scorer.py" "$@"
         ;;
     report)
-        "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/reporting/reporter.py" "$@"
+        if [[ $# -eq 0 || ( "${1:-}" == "--format" && "${2:-}" == "md" && -z "${3:-}" ) ]]; then
+            tmp_rep_in="$(mktemp "${TMPDIR:-/tmp}/cyber_report_in.XXXXXX")"
+            cat > "$tmp_rep_in"
+            cyber_output_report "$tmp_rep_in" "report" "md"
+            rc=$?
+            rm -f "$tmp_rep_in" 2>/dev/null || true
+            exit $rc
+        else
+            "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/reporting/reporter.py" "$@"
+        fi
         ;;
     geotrace)
         "$CYBER_MASTER_DIR/geotrace" "$@"
@@ -153,6 +167,9 @@ case "$COMMAND" in
         ;;
     threatctx)
         threatctx "$@"
+        ;;
+    mailreport)
+        mailreport "$@"
         ;;
     mhdr)
         if [ -n "$1" ] && [ -f "$1" ]; then

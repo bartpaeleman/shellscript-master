@@ -2,6 +2,11 @@
 
 ## Unreleased (`shellscripts` branch)
 
+### Self-Healing Python Dependencies (`deps_ensure_python`) & `cybermaster` Output Dispatcher (`cyber_output_report`)
+- **`.core/deps.sh` & `AGENTS.md`**: Added `deps_ensure_python` for fast, idempotent just-in-time import checking in `.dep/.venv/bin/python3` with `.dep/.venv.lock` (`mkdir` + `trap` cleanup) and automatic installation from `.dep/requirements.txt` when packages are missing. Connected to `cybermaster` (`run_python.sh`) and `intelmaster` (`threat-intel.sh`).
+- **`modules/macos/security/CYBER/common/aliases.sh`, `modules/macos/security/cybermaster`, `README.md`**: Added `cyber_output_report` and `cyber_select_output_mode` (`1` screen-only via `glow`/`bat`/`rich.markdown` [default], `2` `.md` file export, `3` both, `0` cancel). Wired to `threatctx` (Option 3), `mailreport` (Option 8), and `cybermaster report` (`md`).
+- **Verification (macOS)**: Verified `bash -n`, `python3 -m py_compile`, `./scripter -y --help`, and `cybermaster threatctx paeleman.com` in both Mode `1` (`MODE_1_OK`) and Mode `3` (`MODE_3_OK`).
+
 ### `cybermaster` & `intelmaster` Central `.dep/.venv` Migration & `threatctx` Pipeline Fix
 - **`.dep/requirements.txt` & `.core/deps.sh`**: Created central `.dep/requirements.txt` combining `CYBER/requirements.txt`, `INTEL`/`core` Python dependencies, and `dnspython` (`requests`, `beautifulsoup4`, `rich`, `typer`, `httpx`, `scapy`, `mail-parser`, `pydantic`, `pyyaml`, `authheaders`, `dkimpy`, `python-dateutil`, `tldextract`, `cryptography`, `jinja2`, `weasyprint`, `dnspython`), and installed all packages into `.dep/.venv`. Updated `.core/deps.sh` (`MACOS_PYTHON_DEPS` and `deps_install_missing`) to create `.dep/.venv` and install `.dep/requirements.txt` automatically when missing.
 - **`modules/macos/security/CYBER/common/run_python.sh` & `modules/macos/security/INTEL/threat-intel.sh`**: Removed per-module `.venv` creation/activation and removed the bare system `python3` fallback in `threat-intel.sh`; both strictly require and invoke the repo-local `.dep/.venv/bin/python3` (initializing via `.core/deps.sh install` if missing).

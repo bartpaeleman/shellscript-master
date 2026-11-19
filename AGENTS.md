@@ -40,6 +40,7 @@
 - `scripter` voert bij elke opstart een snelle, stille pre-check uit:
   - Herstelt indien nodig `chmod +x` op `scripter`, `.core/*.sh` en `modules/**/*.sh` / `*.py`.
   - Controleert of `.config/.env` (vanuit `.config/.env.example`) en `.dep/.venv` aanwezig zijn en initialiseert ontbrekende basisstructuren.
+- Python-afhankelijke modules (`cybermaster`, `intelmaster`, enz.) roepen bij aanvang `deps_ensure_python` (`.core/deps.sh`) aan voor race-vrije, just-in-time installatie van ontbrekende packages in `.dep/.venv` en gebruiken altijd `$SCRIPTER_HOME/.dep/.venv/bin/python3` (relatief vanaf de repo-root).
 
 ## Omgevings-Pariteit & Anti-Regressie Standaarden
 - Verbied hardcoded paden (`/Users/...`, `/share/...`) en GNU-only CLI-flags (`sed -i`, `readlink -f`, `grep -P`) in gedeelde code; gebruik de OS-abstractie wrappers uit `.core/os_detect.sh`.

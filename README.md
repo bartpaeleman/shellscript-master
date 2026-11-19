@@ -95,7 +95,7 @@ Maak `scripter` overal in de terminal beschikbaar:
 - **Systeembeheer:** `macmaster` (`crontab_manager`, `zshrc_editor`, `auto_cleanup`, `clear_cache`, `uninstall`, `aliases`) & `qnapmaster` (`containers`, `cleanup`, `entware`, `persistence`, `aliases`).
   - **Alias Manager (`-m aliases` / `-q aliases`):** Beheer aliassen (inclusief losse legacy-aliassen) met Tab pad-autocomplete, automatische `.bak` backup, `pyvenv` preset, Webserver/Project `prd`/`dev`/`tst` presets (`/share/Web/`, `/share/Web/DEV/`, `/share/Web/TEST/` op QNAP; `~/Sites` op macOS), **Directe Module-Aliassen** (`gitmaster`, `dockermaster`, `dbmaster`, etc.) en een **Doelbestand-kiezer** op zowel QNAP (`/share/Public/.bash_aliases`, `/share/homes/<user>/.profile`, `/root/.profile`, `/root/.bashrc`, `/etc/profile`, `/opt/etc/profile`) als macOS (`~/.zshrc`, `~/.zprofile`, `~/.bash_profile`, `~/.bashrc` + legacy `macscripts/`/`scriptmaster` opschoning).
 - **Bestands- & Databeheer:** `filemaster` (`rename`, `mkdirs`, `archive`, `cleanup`, `compare`, `sync`, `csv`, `fzf`, `large`), `datamaster` (`table`, `delimiter`, `convert`, `normalize`, `deps`), `textmaster` (`stats`, `replace`, `diff`, `merge`, `case`), `rename_ebooks`.
-- **Netwerk & Cybersecurity `[MAC]`:** `networkmaster`, `cybermaster`, `intelmaster`.
+- **Netwerk & Cybersecurity `[MAC]`:** `networkmaster`, `cybermaster` (`mailtrace`, `mhdr`, `threatctx`, `mailreport`, `geotrace`, `recon`; alle Markdown-rapportacties vragen vooraf de output-modus via `cyber_output_report`: `1` alleen scherm [default], `2` `.md` export, `3` beide, `0` annuleren), `intelmaster`.
 - **Media & Multimedia `[MAC]`:** `audiomaster`, `videomaster`, `imagemaster`, `karaokemaster`.
 
 ---
