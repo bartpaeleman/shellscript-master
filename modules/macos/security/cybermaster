@@ -79,6 +79,46 @@ _cyber_toggle_badge() {
     fi
 }
 
+_cyber_prompt_extra_flags() {
+    local __var_name="$1"
+    local __tool_name="$2"
+    local __help_cmd="$3"
+    local __current="$4"
+    local __examples="$5"
+
+    echo ""
+    echo -e "${CYAN}${BOLD}--- Extra CLI-flags voor ${__tool_name} ---${NC}"
+    echo "Hier kun je optionele extra command-line flags meegeven die niet als losse schakelaar in het menu staan."
+    echo ""
+    echo -e "${YELLOW}Beschikbare overige/referentie-vlaggen (${__tool_name} --help):${NC}"
+    local __help_lines
+    __help_lines="$("$__help_cmd" --help 2>/dev/null | grep -E '^[[:space:]]*(-|--|#?[[:space:]]+--)' | grep -vE '(--max-hops|--wait|--queries|--resolve|--json|--ping|--trace|--ssl|--cloudflare|--confirm|--all|--verbose|--silent|-ip )' | head -n 6 || true)"
+    if [[ -n "$__help_lines" ]]; then
+        echo "$__help_lines"
+    else
+        echo "  (Alle standaard-vlaggen staan al als losse schakelaar in het menu; --help blijft beschikbaar.)"
+    fi
+    echo ""
+    echo -e "${GREEN}Voorbeelden:${NC} ${__examples}"
+    echo -e "${DIM}Huidige extra flags: ${__current:-geen}${NC}"
+    echo ""
+    local __val=""
+    read -rp "Typ extra flags ('-' of 'clear' = wissen, Enter / '0' = terug): " __val
+    case "$__val" in
+        ""|0|q|Q)
+            return 0
+            ;;
+        -|clear|CLEAR)
+            printf -v "$__var_name" '%s' ""
+            return 0
+            ;;
+        *)
+            printf -v "$__var_name" '%s' "$__val"
+            return 0
+            ;;
+    esac
+}
+
 configure_and_run_geotrace() {
     local target="${1:-}"
     local max_hops="30"
@@ -100,10 +140,13 @@ configure_and_run_geotrace() {
         local cmd_preview="geotrace ${cmd_args[*]} ${target:-<target>}"
 
         ui_clear_screen
-        ui_header "GEOTRACE — CONFIGURATIE & START" \
-            "Target   : ${CYAN}${target_disp}${NC}" \
-            "Opties   : Hops=${CYAN}${max_hops}${NC} | Wait=${CYAN}${wait_sec}s${NC} | Queries=${CYAN}${queries}${NC} | DNS=$(_cyber_toggle_badge "$do_resolve") | JSON=$(_cyber_toggle_badge "$output_json")" \
-            "Commando : ${DIM}${cmd_preview}${NC}"
+        local -a header_lines=(
+            "Target   : ${CYAN}${target_disp}${NC}"
+            "Opties   : Hops=${CYAN}${max_hops}${NC} | Wait=${CYAN}${wait_sec}s${NC} | Queries=${CYAN}${queries}${NC} | DNS=$(_cyber_toggle_badge "$do_resolve") | JSON=$(_cyber_toggle_badge "$output_json")"
+        )
+        [[ -n "$extra_flags" ]] && header_lines+=("Extra    : ${CYAN}${extra_flags}${NC}")
+        header_lines+=("Commando : ${DIM}${cmd_preview}${NC}")
+        ui_header "GEOTRACE — CONFIGURATIE & START" "${header_lines[@]}"
 
         ui_item "1" "Uitvoeren / Starten (Run)"    "Start geotrace met bovenstaande opties"
         ui_item "2" "Target / Doelwit instellen"   "IP, domein of host (${target_disp})"
@@ -112,7 +155,7 @@ configure_and_run_geotrace() {
         ui_item "5" "Probes per hop (-q)"          "Aantal queries per hop (huidige: ${queries})"
         ui_item "6" "Reverse-DNS (--resolve)"      "$(_cyber_toggle_badge "$do_resolve") Toon hostnames per hop"
         ui_item "7" "JSON output (--json)"         "$(_cyber_toggle_badge "$output_json") Output als JSON"
-        ui_item "8" "Extra CLI-flags"              "Huidige: ${extra_flags:-geen}"
+        ui_item "8" "Extra CLI-flags"              "(optioneel — handmatige vlaggen toevoegen, bijv. --help; nu: ${extra_flags:-geen})"
         ui_item "R" "Reset naar standaardwaarden"  "Herstel alle opties naar defaults"
         ui_item "0" "Terug (Annuleren)"            ""
         printf "\n"
@@ -182,10 +225,7 @@ configure_and_run_geotrace() {
                 [[ "$output_json" == "true" ]] && output_json="false" || output_json="true"
                 ;;
             8)
-                local new_extra=""
-                if ui_prompt_input new_extra "Extra CLI-flags (leeg = geen)" "$extra_flags"; then
-                    extra_flags="$new_extra"
-                fi
+                _cyber_prompt_extra_flags extra_flags "geotrace" "$CYBER_MASTER_DIR/geotrace" "$extra_flags" "--help  |  -m 15 -w 1  |  --resolve --json"
                 ;;
             [rR])
                 max_hops="30"; wait_sec="2"; queries="1"
@@ -237,10 +277,13 @@ configure_and_run_recon() {
         local cmd_preview="recon ${cmd_args[*]}"
 
         ui_clear_screen
-        ui_header "RECON — CONFIGURATIE & START" \
-            "Target   : ${CYAN}${target_disp}${NC} | Type: ${CYAN}${mode}${NC} | Output: ${CYAN}${output_lvl}${NC}" \
-            "Features : Ping=$(_cyber_toggle_badge "$do_ping") Trace=$(_cyber_toggle_badge "$do_trace") SSL=$(_cyber_toggle_badge "$do_ssl") CF=$(_cyber_toggle_badge "$do_cloudflare") Confirm=$(_cyber_toggle_badge "$do_confirm")" \
-            "Commando : ${DIM}${cmd_preview}${NC}"
+        local -a recon_header_lines=(
+            "Target   : ${CYAN}${target_disp}${NC} | Type: ${CYAN}${mode}${NC} | Output: ${CYAN}${output_lvl}${NC}"
+            "Features : Ping=$(_cyber_toggle_badge "$do_ping") Trace=$(_cyber_toggle_badge "$do_trace") SSL=$(_cyber_toggle_badge "$do_ssl") CF=$(_cyber_toggle_badge "$do_cloudflare") Confirm=$(_cyber_toggle_badge "$do_confirm")"
+        )
+        [[ -n "$extra_flags" ]] && recon_header_lines+=("Extra    : ${CYAN}${extra_flags}${NC}")
+        recon_header_lines+=("Commando : ${DIM}${cmd_preview}${NC}")
+        ui_header "RECON — CONFIGURATIE & START" "${recon_header_lines[@]}"
 
         ui_item "1"  "Uitvoeren / Starten (Run)"      "Start recon met bovenstaande opties"
         ui_item "2"  "Target / Doelwit instellen"     "Domein, IP of bedrijfsnaam (${target_disp})"
@@ -252,7 +295,7 @@ configure_and_run_recon() {
         ui_item "8"  "Vendor confirm (--confirm)"     "$(_cyber_toggle_badge "$do_confirm") Eerste gevonden domein kiezen"
         ui_item "9"  "Alles activeren (--all)"        "Zet Ping, Trace, SSL en CloudFlare AAN"
         ui_item "10" "Output-niveau wisselen"         "normaal -> verbose -> silent (huidige: ${output_lvl})"
-        ui_item "11" "Extra CLI-flags"                "Huidige: ${extra_flags:-geen}"
+        ui_item "11" "Extra CLI-flags"                "(optioneel — handmatige vlaggen toevoegen, bijv. --help; nu: ${extra_flags:-geen})"
         ui_item "R"  "Reset naar standaardwaarden"    "Herstel alle opties naar defaults"
         ui_item "0"  "Terug (Annuleren)"              ""
         printf "\n"
@@ -315,10 +358,7 @@ configure_and_run_recon() {
                 esac
                 ;;
             11)
-                local new_extra=""
-                if ui_prompt_input new_extra "Extra CLI-flags (leeg = geen)" "$extra_flags"; then
-                    extra_flags="$new_extra"
-                fi
+                _cyber_prompt_extra_flags extra_flags "recon" "$CYBER_MASTER_DIR/recon" "$extra_flags" "--help  |  --all --verbose  |  --vendor \"Microsoft\" --confirm"
                 ;;
             [rR])
                 mode="domain"; do_ping="false"; do_trace="false"; do_ssl="false"

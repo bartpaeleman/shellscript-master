@@ -45,6 +45,43 @@ _net_toggle_badge() {
     fi
 }
 
+_net_prompt_extra_flags() {
+    local __var_name="$1"
+    local __current="$2"
+
+    echo ""
+    echo -e "${CYAN}${BOLD}--- Extra CLI-flags voor geotrace ---${NC}"
+    echo "Hier kun je optionele extra command-line flags meegeven die niet als losse schakelaar in het menu staan."
+    echo ""
+    echo -e "${YELLOW}Beschikbare overige/referentie-vlaggen (geotrace.sh --help):${NC}"
+    local __help_lines
+    __help_lines="$("$SCRIPT_DIR/geotrace.sh" --help 2>/dev/null | grep -E '^[[:space:]]*(-|--)' | grep -vE '(--max-hops|--wait|--queries|--resolve|--json)' | head -n 6 || true)"
+    if [[ -n "$__help_lines" ]]; then
+        echo "$__help_lines"
+    else
+        echo "  (Alle standaard-vlaggen staan al als losse schakelaar in het menu; --help blijft beschikbaar.)"
+    fi
+    echo ""
+    echo -e "${GREEN}Voorbeelden:${NC} --help  |  -m 15 -w 1  |  --resolve --json"
+    echo -e "${DIM}Huidige extra flags: ${__current:-geen}${NC}"
+    echo ""
+    local __val=""
+    read -rp "Typ extra flags ('-' of 'clear' = wissen, Enter / '0' = terug): " __val
+    case "$__val" in
+        ""|0|q|Q)
+            return 0
+            ;;
+        -|clear|CLEAR)
+            printf -v "$__var_name" '%s' ""
+            return 0
+            ;;
+        *)
+            printf -v "$__var_name" '%s' "$__val"
+            return 0
+            ;;
+    esac
+}
+
 run_geotrace() {
     if [[ ! -f "$SCRIPT_DIR/geotrace.sh" ]]; then
         echo -e "${RED}geotrace.sh script not found in $SCRIPT_DIR${NC}"
@@ -72,10 +109,13 @@ run_geotrace() {
         local cmd_preview="geotrace.sh ${cmd_args[*]} ${target:-<target>}"
 
         ui_clear_screen
-        ui_header "GEOTRACE — CONFIGURATIE & START" \
-            "Target   : ${CYAN}${target_disp}${NC}" \
-            "Opties   : Hops=${CYAN}${max_hops}${NC} | Wait=${CYAN}${wait_sec}s${NC} | Queries=${CYAN}${queries}${NC} | DNS=$(_net_toggle_badge "$do_resolve") | JSON=$(_net_toggle_badge "$output_json")" \
-            "Commando : ${DIM}${cmd_preview}${NC}"
+        local -a header_lines=(
+            "Target   : ${CYAN}${target_disp}${NC}"
+            "Opties   : Hops=${CYAN}${max_hops}${NC} | Wait=${CYAN}${wait_sec}s${NC} | Queries=${CYAN}${queries}${NC} | DNS=$(_net_toggle_badge "$do_resolve") | JSON=$(_net_toggle_badge "$output_json")"
+        )
+        [[ -n "$extra_flags" ]] && header_lines+=("Extra    : ${CYAN}${extra_flags}${NC}")
+        header_lines+=("Commando : ${DIM}${cmd_preview}${NC}")
+        ui_header "GEOTRACE — CONFIGURATIE & START" "${header_lines[@]}"
 
         ui_item "1" "Uitvoeren / Starten (Run)"    "Start geotrace met bovenstaande opties"
         ui_item "2" "Target / Doelwit instellen"   "IP, domein of host (${target_disp})"
@@ -84,7 +124,7 @@ run_geotrace() {
         ui_item "5" "Probes per hop (-q)"          "Aantal queries per hop (huidige: ${queries})"
         ui_item "6" "Reverse-DNS (--resolve)"      "$(_net_toggle_badge "$do_resolve") Toon hostnames per hop"
         ui_item "7" "JSON output (--json)"         "$(_net_toggle_badge "$output_json") Output als JSON"
-        ui_item "8" "Extra CLI-flags"              "Huidige: ${extra_flags:-geen}"
+        ui_item "8" "Extra CLI-flags"              "(optioneel — handmatige vlaggen toevoegen, bijv. --help; nu: ${extra_flags:-geen})"
         ui_item "R" "Reset naar standaardwaarden"  "Herstel alle opties naar defaults"
         ui_item "0" "Terug (Annuleren)"            ""
         printf "\n"
@@ -154,10 +194,7 @@ run_geotrace() {
                 [[ "$output_json" == "true" ]] && output_json="false" || output_json="true"
                 ;;
             8)
-                local new_extra=""
-                if ui_prompt_input new_extra "Extra CLI-flags (leeg = geen)" "$extra_flags"; then
-                    extra_flags="$new_extra"
-                fi
+                _net_prompt_extra_flags extra_flags "$extra_flags"
                 ;;
             [rR])
                 max_hops="30"; wait_sec="2"; queries="1"
