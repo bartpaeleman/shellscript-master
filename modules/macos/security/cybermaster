@@ -95,13 +95,13 @@ run_interactive() {
                 if get_eml_file; then cat "$eml_file" | mhdr; pause; fi
                 ;;
             3)
-                if get_target; then threatctx "$target"; pause; fi
+                if get_target; then threatctx "$target" md; pause; fi
                 ;;
             4)
-                if get_target; then echo "{\"target\": \"$target\"}" | "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/enrich/enricher.py" | "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/scoring/risk_scorer.py" | "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/reporting/reporter.py" --format html; pause; fi
+                if get_target; then threatctx "$target" html; pause; fi
                 ;;
             5)
-                if get_target; then echo "{\"target\": \"$target\"}" | "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/enrich/enricher.py" | "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/scoring/risk_scorer.py" | "$PYTHON_WRAPPER" "$CYBER_MASTER_DIR/reporting/reporter.py" --format pdf; pause; fi
+                if get_target; then threatctx "$target" pdf; pause; fi
                 ;;
             6)
                 read -e -p "Enter arguments for geotrace: " args

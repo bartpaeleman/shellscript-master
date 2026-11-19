@@ -38,6 +38,19 @@ MACOS_PYTHON_DEPS=(
     "PIL:pillow:Image processing (imagemaster)"
     "pypdf:pypdf:PDF metadata/ebooks (rename_ebooks)"
     "bs4:beautifulsoup4:HTML parsing (intelmaster)"
+    "rich:rich:Terminal UI formatting (cybermaster)"
+    "typer:typer:CLI framework (cybermaster)"
+    "httpx:httpx:Async HTTP client (cybermaster)"
+    "scapy:scapy:Packet manipulation (cybermaster)"
+    "mailparser:mail-parser:Email parser (cybermaster)"
+    "pydantic:pydantic:Data validation (cybermaster)"
+    "authheaders:authheaders:SPF/DKIM/DMARC verification (cybermaster)"
+    "dkim:dkimpy:DKIM verification (cybermaster)"
+    "dateutil:python-dateutil:Date parsing (cybermaster, intelmaster)"
+    "tldextract:tldextract:Domain extraction (cybermaster)"
+    "cryptography:cryptography:TLS/crypto utilities (cybermaster)"
+    "jinja2:jinja2:Report templating (cybermaster)"
+    "weasyprint:weasyprint:PDF report generation (cybermaster)"
 )
 
 _dep_color() {
@@ -160,9 +173,18 @@ deps_install_missing() {
         done
     fi
 
+    if [[ ! -x "$ROOT_DIR/.dep/.venv/bin/python3" ]] && command -v python3 >/dev/null 2>&1; then
+        echo "Creating central Python virtual environment in $ROOT_DIR/.dep/.venv..."
+        python3 -m venv "$ROOT_DIR/.dep/.venv" || echo "Warning: failed to create central .venv"
+    fi
+
     local pip_cmd; pip_cmd="$(_pip_bin)"
     local py; py="$(_py_bin)"
     if [[ -n "$py" && -n "$pip_cmd" ]]; then
+        if [[ -f "$ROOT_DIR/.dep/requirements.txt" ]]; then
+            echo "Installing Python packages from .dep/requirements.txt..."
+            "$pip_cmd" install -q -r "$ROOT_DIR/.dep/requirements.txt" 2>/dev/null || echo "Warning: some packages from .dep/requirements.txt failed to install"
+        fi
         local imp pkg pdesc
         for entry in "${ACTIVE_PY[@]}"; do
             IFS=':' read -r imp pkg pdesc <<< "$entry"

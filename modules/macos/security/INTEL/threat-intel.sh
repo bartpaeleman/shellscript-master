@@ -7,6 +7,20 @@ set -euo pipefail
 
 # Define paths
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+SCRIPTER_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+CENTRAL_VENV="$SCRIPTER_ROOT/.dep/.venv"
+PYTHON_BIN="$CENTRAL_VENV/bin/python3"
+
+if [[ ! -x "$PYTHON_BIN" ]]; then
+    if [[ -f "$SCRIPTER_ROOT/.core/deps.sh" ]]; then
+        echo "[info] Centrale .dep/.venv ontbreekt; initialiseren via .core/deps.sh..." >&2
+        bash "$SCRIPTER_ROOT/.core/deps.sh" install >&2 || true
+    fi
+    if [[ ! -x "$PYTHON_BIN" ]]; then
+        PYTHON_BIN="$(command -v python3 || echo python3)"
+    fi
+fi
+
 CONFIG_FILE="$SCRIPT_DIR/config.json"
 SRC_DIR="$SCRIPT_DIR/src"
 ASSETS_DIR="$SCRIPT_DIR/assets"
@@ -18,7 +32,7 @@ TMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TMP_DIR"' EXIT
 
 # Get output dir from config
-PUBLIC_DIR=$(python3 -c "
+PUBLIC_DIR=$("$PYTHON_BIN" -c "
 import json, sys
 try:
     with open('$CONFIG_FILE', 'r') as f:
@@ -78,7 +92,7 @@ run_aggregator() {
             echo "    [!] Warning: Failed to download $url" >&2
             echo "        -> Deactivating feed in config.json due to failure."
 
-            FAILED_URL="$url" python3 -c "
+            FAILED_URL="$url" "$PYTHON_BIN" -c "
 import json, sys, os
 try:
     with open('$CONFIG_FILE', 'r') as f:
@@ -104,7 +118,7 @@ except Exception as e:
     # Run Python Analyzer
     echo "[*] Analyzing data and generating report..."
     if [ -f "$ANALYZER_SCRIPT" ]; then
-        REPORT_PATH=$(python3 "$ANALYZER_SCRIPT" "$CONFIG_FILE" "$TMP_DIR" "$PUBLIC_DIR" "$CSS_FILE")
+        REPORT_PATH=$("$PYTHON_BIN" "$ANALYZER_SCRIPT" "$CONFIG_FILE" "$TMP_DIR" "$PUBLIC_DIR" "$CSS_FILE")
 
         if [ -n "$REPORT_PATH" ] && [ -f "$REPORT_PATH" ]; then
             echo "[+] Report successfully generated: $REPORT_PATH"
@@ -152,7 +166,7 @@ add_intel_source() {
     fi
 
     # Append to JSON using python3 to ensure syntax validity
-    SRC_NAME="$src_name" SRC_URL="$src_url" SRC_TYPE="$src_type" python3 -c "
+    SRC_NAME="$src_name" SRC_URL="$src_url" SRC_TYPE="$src_type" "$PYTHON_BIN" -c "
 import json, sys, os
 try:
     with open('$CONFIG_FILE', 'r') as f:
@@ -181,44 +195,35 @@ except Exception as e:
 }
 
 interactive_toggle() {
-    python3 "$SCRIPT_DIR/interactive_toggle.py" "$CONFIG_FILE"
+    "$PYTHON_BIN" "$SCRIPT_DIR/interactive_toggle.py" "$CONFIG_FILE"
     pause
 }
 
 manage_list_option() {
     local list_key="$1"
-    python3 "$SCRIPT_DIR/manage_lists.py" "$CONFIG_FILE" "$list_key"
+    "$PYTHON_BIN" "$SCRIPT_DIR/manage_lists.py" "$CONFIG_FILE" "$list_key"
     pause
 }
 
 manage_parameters() {
-    python3 "$SCRIPT_DIR/manage_params.py" "$CONFIG_FILE"
+    "$PYTHON_BIN" "$SCRIPT_DIR/manage_params.py" "$CONFIG_FILE"
     pause
 }
 
 install_intel_deps() {
-    echo -e "\n${CYAN}Installing Intel Master Dependencies...${NC}"
-    echo "This will create a local virtual environment and install missing Python packages like 'python-dateutil'."
-
-    if command -v python3 &> /dev/null; then
-        echo "Attempting installation in virtual environment..."
-        python3 -m venv "$SCRIPT_DIR/.venv"
-        source "$SCRIPT_DIR/.venv/bin/activate"
-        if python3 -m pip install python-dateutil; then
+    echo -e "\n${CYAN}Installing Intel Master Dependencies (Central .dep/.venv)...${NC}"
+    if [[ -f "$SCRIPTER_ROOT/.core/deps.sh" ]]; then
+        if bash "$SCRIPTER_ROOT/.core/deps.sh" install; then
+            PYTHON_BIN="$CENTRAL_VENV/bin/python3"
             echo -e "${GREEN}Dependencies installed successfully.${NC}"
         else
-            echo -e "${RED}Error: Failed to install pip or dependencies in virtual environment.${NC}"
+            echo -e "${RED}Error: Failed to install dependencies via .core/deps.sh.${NC}"
         fi
     else
-        echo -e "${RED}Error: python3 is not available in your PATH.${NC}"
+        echo -e "${RED}Error: .core/deps.sh not found.${NC}"
     fi
     pause
 }
-
-# Always ensure we use venv if it exists
-if [ -d "$SCRIPT_DIR/.venv" ]; then
-    source "$SCRIPT_DIR/.venv/bin/activate"
-fi
 
 intelmaster_menu() {
     while true; do
@@ -266,7 +271,7 @@ intelmaster_menu() {
 
 # Function to extract JSON array elements using Python (avoids missing jq dependency)
 get_sources() {
-    python3 -c "
+    "$PYTHON_BIN" -c "
 import json, sys
 try:
     with open('$CONFIG_FILE', 'r') as f:

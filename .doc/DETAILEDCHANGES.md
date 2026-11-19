@@ -2,6 +2,12 @@
 
 ## Unreleased (`shellscripts` branch)
 
+### `cybermaster` & `intelmaster` Central `.dep/.venv` Migration & `threatctx` Pipeline Fix
+- **`.dep/requirements.txt` & `.core/deps.sh`**: Created central `.dep/requirements.txt` combining `CYBER/requirements.txt` and `INTEL`/`core` Python dependencies (`requests`, `beautifulsoup4`, `rich`, `typer`, `httpx`, `scapy`, `mail-parser`, `pydantic`, `pyyaml`, `authheaders`, `dkimpy`, `python-dateutil`, `tldextract`, `cryptography`, `jinja2`, `weasyprint`). Updated `.core/deps.sh` (`MACOS_PYTHON_DEPS` and `deps_install_missing`) to create `.dep/.venv` and install `.dep/requirements.txt` automatically when missing.
+- **`modules/macos/security/CYBER/common/run_python.sh` & `modules/macos/security/INTEL/threat-intel.sh`**: Removed per-module `.venv` creation/activation to eliminate parallel `FileExistsError` / `pip` cache race conditions; both now resolve the repo-local `.dep/.venv/bin/python3` with automatic fallback to `.core/deps.sh install`.
+- **`modules/macos/security/CYBER/common/aliases.sh` & `modules/macos/security/cybermaster`**: Rewrote `threatctx` to run `enricher.py`, `risk_scorer.py`, and `reporter.py` sequentially via `mktemp` intermediate files with minimal-JSON fallback, and routed options 3 (`md`), 4 (`html`), and 5 (`pdf`) through `threatctx`.
+- **`modules/macos/security/CYBER/scoring/risk_scorer.py`**: Added `--target` option and graceful fallback to a valid minimal `UnifiedSchema` JSON on empty or interactive stdin instead of exiting with code `1` (`Empty input received`).
+
 ### Core & Standards
 - **AGENTS.md**: Added Git sync policy, layered documentation (`CHANGELOG.md` vs `.doc/DETAILEDCHANGES.md`), release-locking, silent startup pre-check, OS-parity/anti-regression rules, and mandatory pre-commit verification.
 - **`.core/os_detect.sh`**: Added portable OS-abstraction wrappers (`os_sed_inplace`, `os_readlink_f`, `os_is_macos`, `os_is_qnap`, `os_is_linux`).
