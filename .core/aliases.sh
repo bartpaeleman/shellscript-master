@@ -55,6 +55,12 @@ _alias_read_list() {
             cmd="${cmd#\"}"; cmd="${cmd%\"}"
             ALIAS_NAMES+=("$name")
             ALIAS_CMDS+=("$cmd")
+        elif [[ "$line" == *"() { if [ -n \"\$1\" ]; then cd \""*"\" && ls -1d */ 2>/dev/null; fi; }" ]]; then
+            name="${line%%()*}"
+            cmd="${line#*else cd \"}"
+            cmd="${cmd%%\" && ls -1d \*/ 2>/dev/null; fi; \}}"
+            ALIAS_NAMES+=("$name")
+            ALIAS_CMDS+=("__dirnav__:${cmd}")
         fi
     done < "$prof"
 }
@@ -76,7 +82,13 @@ _alias_write_list() {
         printf "\n# >>> scripter-aliases >>>\n"
         local i
         for ((i=0; i<${#ALIAS_NAMES[@]}; i++)); do
-            printf "alias %s='%s'\n" "${ALIAS_NAMES[$i]}" "${ALIAS_CMDS[$i]}"
+            if [[ "${ALIAS_CMDS[$i]}" == __dirnav__:* ]]; then
+                local dpath="${ALIAS_CMDS[$i]#__dirnav__:}"
+                dpath="${dpath%/}"
+                printf "%s() { if [ -n \"\$1\" ]; then cd \"%s/\$1\"; else cd \"%s\" && ls -1d */ 2>/dev/null; fi; }\n" "${ALIAS_NAMES[$i]}" "$dpath" "$dpath"
+            else
+                printf "alias %s='%s'\n" "${ALIAS_NAMES[$i]}" "${ALIAS_CMDS[$i]}"
+            fi
         done
         printf "# <<< scripter-aliases <<<\n"
     } >> "$tmp"
@@ -149,9 +161,9 @@ alias_presets_wizard() {
             read -e -p "TST path [$def_tst] (Enter=default, 0=cancel): " p_tst
             [[ "$p_tst" == "0" ]] && { ui_cancel_msg; return 0; }
             p_tst="${p_tst:-$def_tst}"
-            _alias_upsert "$prof" "prd" "cd \"${p_prd}\" && ls -la"
-            _alias_upsert "$prof" "dev" "cd \"${p_dev}\" && ls -la"
-            _alias_upsert "$prof" "tst" "cd \"${p_tst}\" && ls -la"
+            _alias_upsert "$prof" "prd" "__dirnav__:${p_prd%/}"
+            _alias_upsert "$prof" "dev" "__dirnav__:${p_dev%/}"
+            _alias_upsert "$prof" "tst" "__dirnav__:${p_tst%/}"
             ;;
         2)
             if os_is_qnap; then
@@ -218,8 +230,8 @@ alias_add_custom() {
     read -e -p "Target path or command (Tab for path autocomplete, 0=cancel): " cmd
     [[ "$cmd" == "0" || -z "$cmd" ]] && { ui_cancel_msg; return 0; }
     if [[ -d "$cmd" ]]; then
-        if ui_confirm_action "'$cmd' is a directory. Navigate with 'cd \"$cmd\" && ls -la'?"; then
-            cmd="cd \"${cmd}\" && ls -la"
+        if ui_confirm_action "'$cmd' is a directory. Navigate with directory listing & optional subdir?"; then
+            cmd="__dirnav__:${cmd%/}"
         fi
     fi
     if [[ "$name" == "python3" ]]; then
