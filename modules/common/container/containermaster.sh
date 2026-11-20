@@ -152,7 +152,7 @@ opt_create() {
     echo "1) Start from docker-compose.yml  2) Run single container manually"
     read -rp "Choice [1/2]: " m
     if [[ "$m" == "1" ]]; then
-        read -rp "Path to docker-compose.yml [./docker-compose.yml]: " f
+        ui_read_path f "Path to docker-compose.yml [./docker-compose.yml] (0 = annuleren)" "./docker-compose.yml" || return 0
         f="${f:-./docker-compose.yml}"
         [[ ! -f "$f" ]] && { ui_err "File not found: $f"; return 1; }
         if "$DOCKER_BIN" compose version >/dev/null 2>&1; then
@@ -166,7 +166,7 @@ opt_create() {
         read -rp "Container name: " cname
         read -rp "Image (e.g. nginx:alpine): " img
         read -rp "Port mapping (e.g. 8080:80, optional): " port
-        read -rp "Volume mount (e.g. /host:/container, optional): " vol
+        ui_read_path vol "Volume mount (e.g. /host:/container, optional, 0 = annuleren)" || return 0
         [[ -z "$cname" || -z "$img" ]] && { ui_warn "Name and image required."; return 1; }
         local args=("run" "-d" "--name" "$cname")
         [[ -n "$port" ]] && args+=("-p" "$port")

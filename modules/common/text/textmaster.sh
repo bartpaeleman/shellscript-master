@@ -27,13 +27,15 @@ show_help() {
 
 opt_stats() {
     local f="${1:-}"
-    [[ -z "$f" ]] && read -rp "File path: " f
+    if [[ -z "$f" ]]; then
+        ui_read_path f "File path (0 = annuleren)" || return 0
+    fi
     [[ ! -f "$f" ]] && { ui_err "File not found: $f"; return 1; }
     "$(_py_bin)" "$MOD_DIR/text_stats.py" "$f"
 }
 
 opt_replace() {
-    read -rp "Target file: " f
+    ui_read_path f "Target file (0 = annuleren)" || return 0
     [[ ! -f "$f" ]] && { ui_err "File not found: $f"; return 1; }
     read -rp "Search pattern: " pat
     read -rp "Replacement: " repl
@@ -47,21 +49,21 @@ opt_replace() {
 }
 
 opt_diff() {
-    read -rp "File 1: " f1
-    read -rp "File 2: " f2
+    ui_read_path f1 "File 1 (0 = annuleren)" || return 0
+    ui_read_path f2 "File 2 (0 = annuleren)" || return 0
     [[ ! -f "$f1" || ! -f "$f2" ]] && { ui_err "Both files must exist."; return 1; }
     diff -u "$f1" "$f2" || true
 }
 
 opt_merge() {
-    read -rp "Input files (space-separated): " files
-    read -rp "Output file [merged.txt]: " out; out="${out:-merged.txt}"
+    ui_read_path files "Input files (space-separated, 0 = annuleren)" || return 0
+    ui_read_path out "Output file [merged.txt] (0 = annuleren)" "merged.txt" || return 0
     # shellcheck disable=SC2086
     cat $files > "$out" && ui_ok "Merged into $out"
 }
 
 opt_case() {
-    read -rp "Input file: " f
+    ui_read_path f "Input file (0 = annuleren)" || return 0
     [[ ! -f "$f" ]] && { ui_err "File not found: $f"; return 1; }
     echo "1) UPPERCASE  2) lowercase"
     read -rp "Choice [1/2]: " m

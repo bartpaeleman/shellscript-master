@@ -25,7 +25,9 @@ show_help() {
 
 opt_scaffold() {
     local dir="${1:-}"
-    [[ -z "$dir" ]] && read -rp "Project directory [./web-app]: " dir
+    if [[ -z "$dir" ]]; then
+        ui_read_path dir "Project directory [./web-app] (0 = annuleren)" "./web-app" || return 0
+    fi
     dir="${dir:-./web-app}"
     mkdir -p "$dir/assets/css" "$dir/assets/js" "$dir/assets/img" "$dir/includes" "$dir/config"
     cat > "$dir/index.php" <<'PHP'
@@ -50,7 +52,9 @@ PHP
 
 opt_readme() {
     local dir="${1:-}"
-    [[ -z "$dir" ]] && read -rp "Project directory [.]: " dir
+    if [[ -z "$dir" ]]; then
+        ui_read_path dir "Project directory [.] (0 = annuleren)" "." || return 0
+    fi
     dir="${dir:-.}"
     "$(_py_bin)" "$MOD_DIR/generate_readme.py" "$dir"
 }

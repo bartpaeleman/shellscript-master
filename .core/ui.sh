@@ -43,13 +43,107 @@ ui_read_path() {
     local __prompt="$2"
     local __default="${3:-}"
     local __val=""
-    if read -e -p "${__prompt}: " __val 2>/dev/null; then
-        :
+
+    if [[ -n "${BASH_VERSION:-}" ]]; then
+        local __tty_in=""
+        if [[ ! -t 0 ]] && { : </dev/tty; } 2>/dev/null; then
+            __tty_in="/dev/tty"
+        fi
+        printf "%s: " "$__prompt"
+        local __ch=""
+        while true; do
+            if [[ -n "$__tty_in" ]]; then
+                IFS= read -r -s -n 1 __ch <"$__tty_in" || break
+            else
+                IFS= read -r -s -n 1 __ch || break
+            fi
+
+            if [[ -z "$__ch" ]]; then
+                printf "\n"
+                break
+            elif [[ "$__ch" == $'\177' || "$__ch" == $'\b' ]]; then
+                if [[ ${#__val} -gt 0 ]]; then
+                    __val="${__val%?}"
+                    printf "\b \b"
+                fi
+            elif [[ "$__ch" == $'\t' ]]; then
+                local __search="$__val"
+                local __tilde_mode=0
+                if [[ "$__search" == "~" ]]; then
+                    __search="${HOME}/"
+                    __tilde_mode=1
+                elif [[ "$__search" == "~/"* ]]; then
+                    __search="${HOME}/${__search#\~/}"
+                    __tilde_mode=1
+                fi
+
+                local -a __matches=()
+                local __m=""
+                while IFS= read -r __m; do
+                    __matches+=("$__m")
+                done < <(compgen -f -- "$__search" 2>/dev/null)
+
+                if [[ ${#__matches[@]} -eq 1 ]]; then
+                    local __match="${__matches[0]}"
+                    [[ -d "$__match" && "$__match" != */ ]] && __match="${__match}/"
+                    if [[ "$__tilde_mode" -eq 1 && "$__match" == "${HOME}/"* ]]; then
+                        __match="~/${__match#"${HOME}/"}"
+                    fi
+                    local __i
+                    for ((__i = 0; __i < ${#__val}; __i++)); do printf "\b \b"; done
+                    __val="$__match"
+                    printf "%s" "$__val"
+                elif [[ ${#__matches[@]} -gt 1 ]]; then
+                    local __lcp="${__matches[0]}"
+                    local __j
+                    for ((__j = 1; __j < ${#__matches[@]}; __j++)); do
+                        local __other="${__matches[$__j]}"
+                        while [[ "$__other" != "$__lcp"* && -n "$__lcp" ]]; do
+                            __lcp="${__lcp%?}"
+                        done
+                    done
+                    if [[ "$__tilde_mode" -eq 1 && "$__lcp" == "${HOME}/"* ]]; then
+                        __lcp="~/${__lcp#"${HOME}/"}"
+                    fi
+                    if [[ ${#__lcp} -gt ${#__val} ]]; then
+                        local __i
+                        for ((__i = 0; __i < ${#__val}; __i++)); do printf "\b \b"; done
+                        __val="$__lcp"
+                        printf "%s" "$__val"
+                    else
+                        printf "\n"
+                        local __shown=0
+                        for __m in "${__matches[@]}"; do
+                            [[ -d "$__m" && "$__m" != */ ]] && __m="${__m}/"
+                            printf "  %s\n" "$__m"
+                            __shown=$((__shown + 1))
+                            [[ "$__shown" -ge 20 ]] && { printf "  ... (%d meer)\n" "$((${#__matches[@]} - 20))"; break; }
+                        done
+                        printf "%s: %s" "$__prompt" "$__val"
+                    fi
+                fi
+            else
+                __val="${__val}${__ch}"
+                printf "%s" "$__ch"
+            fi
+        done
     else
-        read -rp "${__prompt}: " __val
+        IFS= read -r -p "${__prompt}: " __val || return 1
+    fi
+
+    __val="${__val#"${__val%%[![:space:]]*}"}"
+    __val="${__val%"${__val##*[![:space:]]}"}"
+    if [[ "$__val" == "0" ]]; then
+        return 1
     fi
     [[ -z "$__val" && -n "$__default" ]] && __val="$__default"
+    if [[ "$__val" == "~" ]]; then
+        __val="$HOME"
+    elif [[ "$__val" == "~/"* ]]; then
+        __val="${HOME}/${__val#\~/}"
+    fi
     printf -v "$__var_name" '%s' "$__val"
+    return 0
 }
 
 ui_run_safe() {
