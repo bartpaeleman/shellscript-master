@@ -43,13 +43,24 @@ ui_read_path() {
     local __prompt="$2"
     local __default="${3:-}"
     local __val=""
-    if read -e -p "${__prompt}: " __val 2>/dev/null; then
-        :
+    if read -e -t 0 </dev/null 2>/dev/null; then
+        read -e -p "${__prompt}: " __val || return 1
     else
-        read -rp "${__prompt}: " __val
+        read -rp "${__prompt}: " __val || return 1
+    fi
+    __val="${__val#"${__val%%[![:space:]]*}"}"
+    __val="${__val%"${__val##*[![:space:]]}"}"
+    if [[ "$__val" == "0" ]]; then
+        return 1
     fi
     [[ -z "$__val" && -n "$__default" ]] && __val="$__default"
+    if [[ "$__val" == "~" ]]; then
+        __val="$HOME"
+    elif [[ "$__val" == "~/"* ]]; then
+        __val="${HOME}/${__val#\~/}"
+    fi
     printf -v "$__var_name" '%s' "$__val"
+    return 0
 }
 
 ui_run_safe() {

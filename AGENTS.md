@@ -25,6 +25,7 @@
   - **Hoofdmenu (`scripter`)**: Gebruikt `X` / `x` (`X) Exit`) om af te sluiten, **zonder** `Enter`-default (een lege `Enter` herlaadt het hoofdmenu om per ongeluk afsluiten te voorkomen), gevolgd door `clear` bij verlaten.
   - **Submenu's & Modules**: Gebruiken `0` als primaire terug-optie (`0) Terug`), waarbij `ui_read_menu_choice` lege invoer (`Enter`) standaard omzet naar `0`, en invoer-prompts accepteren `0` (of `q`) om te annuleren.
 - **Centrale Try/Catch (`ui_run_safe`)**: Externe commando's en kritieke acties in interactieve menu's worden gewikkeld in `ui_run_safe` (`.core/ui.sh`) zodat fouten netjes worden opgevangen zonder dat `scripter` crasht.
+- **Verplichte `ui_read_path` voor Paden & Bestanden**: Gebruik voor élke directory-, bestands- of pad-invoer verplicht `ui_read_path` uit `.core/ui.sh` (nooit een losse `read -r`) zodat Tab-autocomplete, tilde-expansie en `0`-annulering overal uniform werken.
 - **QNAP / BusyBox Compatibiliteit & Persistentie**:
   - Vermijd `read -e` of macOS-only commando's in `.core/` of QNAP-code (gebruik `ui_read_path` uit `.core/ui.sh`).
   - Houd `COMMON_DEPS`, `MACOS_DEPS` en `QNAP_DEPS` strikt gescheiden in `.core/deps.sh` (geen harde fouten als `opkg` ontbreekt).

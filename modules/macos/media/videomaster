@@ -549,7 +549,7 @@ download_menu() {
                 read -p "Type 1) URL of 2) Batch bestand?:  " t_choice
                 if [ "$t_choice" = "2" ]; then
                     m_target_type="batch"
-                    read -p "Geef bestandspad: " m_target
+                    read -e -p "Geef bestandspad (Tab = aanvullen): " m_target
                     m_clip_start="" # Fragments in batch is usually bad idea
                     m_clip_end=""
                 else
