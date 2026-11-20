@@ -44,9 +44,23 @@ ui_read_path() {
     local __default="${3:-}"
     local __val=""
     if read -e -t 0 </dev/null 2>/dev/null; then
-        read -e -p "${__prompt}: " __val || return 1
+        bind 'set disable-completion off' 2>/dev/null || true
+        bind '"\t": complete' 2>/dev/null || true
+        if [[ -t 0 && -t 1 ]]; then
+            IFS= read -r -e -p "${__prompt}: " __val || return 1
+        elif { : </dev/tty; } 2>/dev/null; then
+            IFS= read -r -e -p "${__prompt}: " __val </dev/tty >/dev/tty || return 1
+        else
+            IFS= read -r -e -p "${__prompt}: " __val || return 1
+        fi
     else
-        read -rp "${__prompt}: " __val || return 1
+        if [[ -t 0 && -t 1 ]]; then
+            IFS= read -r -p "${__prompt}: " __val || return 1
+        elif { : </dev/tty; } 2>/dev/null; then
+            IFS= read -r -p "${__prompt}: " __val </dev/tty >/dev/tty || return 1
+        else
+            IFS= read -r -p "${__prompt}: " __val || return 1
+        fi
     fi
     __val="${__val#"${__val%%[![:space:]]*}"}"
     __val="${__val%"${__val##*[![:space:]]}"}"
