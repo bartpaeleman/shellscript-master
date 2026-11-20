@@ -30,7 +30,7 @@ show_help() {
 }
 
 opt_rename() {
-    ui_read_path dir "Target directory [.] (Tab = aanvullen, 0 = annuleren)" "." || return 0
+    ui_read_path dir "Target directory [.] (0 = annuleren)" "." || return 0
     read -rp "Regex pattern: " pat
     read -rp "Replacement: " repl
     [[ -z "$pat" ]] && { ui_warn "Pattern required."; return 1; }
@@ -59,7 +59,7 @@ PY
 opt_mkdirs() {
     local f="${1:-}"
     if [[ -z "$f" ]]; then
-        ui_read_path f "Structure text file (Tab = aanvullen, 0 = annuleren)" || return 0
+        ui_read_path f "Structure text file (0 = annuleren)" || return 0
     fi
     [[ ! -f "$f" ]] && { ui_err "File not found: $f"; return 1; }
     while IFS= read -r line || [[ -n "$line" ]]; do
@@ -72,7 +72,7 @@ opt_mkdirs() {
 opt_archive() {
     local dir="${1:-}"
     if [[ -z "$dir" ]]; then
-        ui_read_path dir "Directory to archive [.] (Tab = aanvullen, 0 = annuleren)" "." || return 0
+        ui_read_path dir "Directory to archive [.] (0 = annuleren)" "." || return 0
     fi
     dir="${dir:-.}"
     [[ ! -d "$dir" ]] && { ui_err "Not a directory: $dir"; return 1; }
@@ -120,8 +120,8 @@ PY
 }
 
 opt_compare() {
-    ui_read_path p1 "Path 1 (Tab = aanvullen, 0 = annuleren)" || return 0
-    ui_read_path p2 "Path 2 (Tab = aanvullen, 0 = annuleren)" || return 0
+    ui_read_path p1 "Path 1 (0 = annuleren)" || return 0
+    ui_read_path p2 "Path 2 (0 = annuleren)" || return 0
     if [[ -d "$p1" && -d "$p2" ]]; then
         diff -rq "$p1" "$p2" || true
     elif [[ -f "$p1" && -f "$p2" ]]; then
@@ -132,8 +132,8 @@ opt_compare() {
 }
 
 opt_sync() {
-    ui_read_path src "Source directory (Tab = aanvullen, 0 = annuleren)" || return 0
-    ui_read_path dst "Destination directory (Tab = aanvullen, 0 = annuleren)" || return 0
+    ui_read_path src "Source directory (0 = annuleren)" || return 0
+    ui_read_path dst "Destination directory (0 = annuleren)" || return 0
     [[ ! -d "$src" ]] && { ui_err "Source not found: $src"; return 1; }
     mkdir -p "$dst"
     if command -v rsync >/dev/null 2>&1; then

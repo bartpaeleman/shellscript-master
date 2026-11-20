@@ -37,7 +37,7 @@ opt_backup() {
 opt_analyze() {
     local target="${1:-}"
     if [[ -z "$target" ]]; then
-        ui_read_path target "SQLite DB path (or leave blank for MySQL, Tab = aanvullen, 0 = annuleren)" || return 0
+        ui_read_path target "SQLite DB path (or leave blank for MySQL, 0 = annuleren)" || return 0
     fi
     if [[ -n "$target" && -f "$target" ]]; then
         "$(_py_bin)" "$MOD_DIR/db_stats.py" "$target"

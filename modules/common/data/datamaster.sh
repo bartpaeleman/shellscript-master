@@ -29,7 +29,7 @@ show_help() {
 opt_table() {
     local f="${1:-}"
     if [[ -z "$f" ]]; then
-        ui_read_path f "CSV file path (Tab = aanvullen, 0 = annuleren)" || return 0
+        ui_read_path f "CSV file path (0 = annuleren)" || return 0
     fi
     [[ ! -f "$f" ]] && { ui_err "File not found: $f"; return 1; }
     "$(_py_bin)" - "$f" <<'PY'
@@ -49,11 +49,11 @@ PY
 }
 
 opt_delimiter() {
-    ui_read_path f "Input CSV file (Tab = aanvullen, 0 = annuleren)" || return 0
+    ui_read_path f "Input CSV file (0 = annuleren)" || return 0
     [[ ! -f "$f" ]] && { ui_err "File not found: $f"; return 1; }
     read -rp "Current delimiter [,]: " d_in; d_in="${d_in:-,}"
     read -rp "New delimiter [;]: " d_out; d_out="${d_out:-;}"
-    ui_read_path out "Output file [${f%.csv}_delim.csv] (Tab = aanvullen, 0 = annuleren)" "${f%.csv}_delim.csv" || return 0
+    ui_read_path out "Output file [${f%.csv}_delim.csv] (0 = annuleren)" "${f%.csv}_delim.csv" || return 0
     "$(_py_bin)" - "$f" "$d_in" "$d_out" "$out" <<'PY'
 import csv, sys
 with open(sys.argv[1], newline="", encoding="utf-8-sig") as fin, open(sys.argv[4], "w", newline="", encoding="utf-8") as fout:
@@ -67,9 +67,9 @@ PY
 opt_convert() {
     echo "1) CSV -> JSON  2) JSON -> CSV  3) XML -> JSON  4) YAML -> JSON"
     read -rp "Choice [1-4]: " m
-    ui_read_path fin "Input file (Tab = aanvullen, 0 = annuleren)" || return 0
+    ui_read_path fin "Input file (0 = annuleren)" || return 0
     [[ ! -f "$fin" ]] && { ui_err "File not found: $fin"; return 1; }
-    ui_read_path fout "Output file (Tab = aanvullen, 0 = annuleren)" || return 0
+    ui_read_path fout "Output file (0 = annuleren)" || return 0
     [[ -z "$fout" ]] && { ui_warn "Output file required."; return 1; }
     "$(_py_bin)" - "$m" "$fin" "$fout" <<'PY'
 import csv, json, sys, xml.etree.ElementTree as ET
@@ -101,7 +101,7 @@ PY
 opt_normalize() {
     local f="${1:-}"
     if [[ -z "$f" ]]; then
-        ui_read_path f "CSV file path (Tab = aanvullen, 0 = annuleren)" || return 0
+        ui_read_path f "CSV file path (0 = annuleren)" || return 0
     fi
     [[ ! -f "$f" ]] && { ui_err "File not found: $f"; return 1; }
     local out="${f%.csv}_clean.csv"
