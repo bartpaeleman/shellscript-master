@@ -639,7 +639,7 @@ git_sub_workflow() {
         ui_item "1" "Quick Commit & Push"    "Preview, add, commit, push"
         ui_item "2" "Sync / Pull"            "Safe rebase or merge"
         ui_item "3" "Stash / Pull / Pop"     "Safe update with dirty tree"
-        ui_item "4" "Apply Cloud Patch"       "Select .patch, 3-way apply & push"
+        ui_item "4" "Apply .patch"       "Select .patch, 3-way apply & push"
         ui_item "0" "Terug"                  ""
         printf "\n"
         local c=""
@@ -648,7 +648,7 @@ git_sub_workflow() {
             1) ui_run_safe "Quick Commit & Push" opt_quick_commit_push ;;
             2) ui_run_safe "Sync / Pull" opt_sync_pull ;;
             3) ui_run_safe "Stash / Pull / Pop" opt_stash_pull_pop ;;
-            4) ui_run_safe "Apply Cloud Patch" git_apply_cloud_patch ;;
+            4) ui_run_safe "Apply .patch" git_apply_cloud_patch ;;
             0|q|Q) break ;;
             *) ui_warn "Invalid choice."; ui_pause ;;
         esac
