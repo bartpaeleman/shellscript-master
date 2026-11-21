@@ -2,6 +2,11 @@
 
 ## Unreleased (`shellscripts` branch)
 
+### `gitmaster` Cloud Patch Selector & 3-Way Apply (`modules/common/git_cloud_patch.sh`, `modules/common/git/gitmaster.sh`)
+- **`modules/common/git_cloud_patch.sh`**: Nieuw cross-platform (`[UNI]`) modulebestand met `git_apply_cloud_patch([patch_file], [target_branch])`, geconverteerd vanuit `apply-cloud-patch.sh` (zonder top-level `set -euo pipefail`, `exit` vervangen door `return` voor `ui_run_safe`, Tab-autocomplete, `0`-annulering, branch-selector `N`/`M`/bestaand, dubbele `diff --git`-detectie, `git apply --check` + `--3way`, commit, push en auto-cleanup).
+- **`modules/common/git/gitmaster.sh`**: `git_cloud_patch.sh` gesourced, optie `8) Apply Cloud Patch` toegevoegd aan `git_sub_branches` (binnen 28-rijen limiet), en CLI-subcommando `patch` / `apply-patch` (`./scripter -g patch [file] [branch]`) + `show_help` bijgewerkt (24 -> 25 functies).
+- **`README.md` & `CHANGELOG.md`**: Functie-aantal bijgewerkt (24 -> 25) en `patch`/`apply-patch` gedocumenteerd.
+
 ### 28-Rijen Terminal Limiet & Categorische `gitmaster` Submenu's (`scripter`, `gitmaster.sh`, `AGENTS.md`, `README.md`)
 - **`scripter`**: Hoofdmenu gecompacteerd met een 2-regelige banner, 2-koloms module-weergave per categorie en een 1-regelige utilities-balk (`P) Persist | D) Deps | H) Help | X) Exit`). Regelaantal teruggebracht van 40 naar 17 (macOS) en van 28 naar 11 (QNAP), met behoud van OS-filtering en `X) Exit` + `clear`.
 - **`modules/common/git/gitmaster.sh`**: Platte 24-opties lijst (41 regels) opgesplitst in een compact hoofdmenu (10 regels) en 5 categorische submenu's (`Status, Diff & Log`, `Dagelijkse Workflow`, `Branches & Merging`, `Stash & Herstel`, `Remotes, Tags & Onderhoud`, elk 7–11 regels) + directe `Config & Token Setup`, met behoud van alle 24 functies en `Enter = 0` via `ui_read_menu_choice`.

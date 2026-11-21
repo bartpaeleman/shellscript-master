@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **`gitmaster` (`patch` / `apply-patch`)**: Cross-platform Antigravity Cloud `.patch` selector met 3-way apply fallback, branch-kiezer, push naar `origin` en automatische patch-cleanup.
+
 ## [1.1.0] - 2026-11-18
 
 ### Added & Changed

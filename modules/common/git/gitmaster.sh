@@ -7,6 +7,7 @@ MOD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "$MOD_DIR/../../.." && pwd)"
 source "$ROOT_DIR/.core/os_detect.sh"
 source "$ROOT_DIR/.core/ui.sh"
+source "$MOD_DIR/../git_cloud_patch.sh"
 
 _require_repo() {
     if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
@@ -36,7 +37,8 @@ show_help() {
     printf "  uat            10) Prepare UAT / merge to staging\n"
     printf "  merge-fix      11) Merge fix/* branch & cleanup\n"
     printf "  tag            12) Create annotated release tag & push\n"
-    printf "  merge-main     13) Merge active branch into main (+ Push & Cleanup)\n\n"
+    printf "  merge-main     13) Merge active branch into main (+ Push & Cleanup)\n"
+    printf "  patch|apply-patch  Apply Antigravity Cloud .patch (3-way + push)\n\n"
     printf "CLEANUP & MAINTENANCE:\n"
     printf "  prune          14) Prune remote-tracking & [gone] branches\n"
     printf "  delete-branch  15) Delete local / remote branch\n"
@@ -783,6 +785,7 @@ case "${1:-menu}" in
     recover)                 opt_emergency_recovery ;;
     untrack)                 opt_untrack ;;
     config)                  opt_config ;;
+    patch|apply-patch)       shift; git_apply_cloud_patch "$@" ;;
     menu)                    git_menu ;;
     *)                       ui_err "Unknown subcommand: $1"; show_help; exit 1 ;;
 esac
