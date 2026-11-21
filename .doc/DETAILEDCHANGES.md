@@ -1,6 +1,11 @@
 # Detailed Changes
 
-## Unreleased (`shellscripts` branch)
+## [1.2.0] - 2026-11-21
+
+### `gitmaster` Cloud Patch Selector & 3-Way Apply (`modules/common/git_cloud_patch.sh`, `modules/common/git/gitmaster.sh`)
+- **`modules/common/git_cloud_patch.sh`**: Nieuw cross-platform (`[UNI]`) modulebestand met `git_apply_cloud_patch([patch_file], [target_branch])`, geconverteerd vanuit `apply-cloud-patch.sh` (zonder top-level `set -euo pipefail`, `exit` vervangen door `return` voor `ui_run_safe`, Tab-autocomplete met `BASH_VERSION` + `-t 0` check, POSIX `sed` zonder `-E`, cross-platform `stat -f` / `date -r` fallback, `0`-annulering, branch-selector `N`/`M`/bestaand, dubbele `diff --git`-detectie, `git apply --check` + `--3way`, commit, push en auto-cleanup).
+- **`modules/common/git/gitmaster.sh`**: `git_cloud_patch.sh` gesourced, optie `Apply .patch` toegevoegd aan `git_sub_workflow` (optie `4`) en `git_sub_branches` (optie `8`, binnen 28-rijen limiet), en CLI-subcommando `patch` / `apply-patch` (`./scripter -g patch [file] [branch]`) + `show_help` bijgewerkt (24 -> 25 functies).
+- **`README.md` & `CHANGELOG.md`**: Functie-aantal bijgewerkt (24 -> 25), `Apply .patch` (`patch` / `apply-patch`) gedocumenteerd en versie gebumpt naar `1.2.0`.
 
 ### `gitmaster` Cloud Patch Selector & 3-Way Apply (`modules/common/git_cloud_patch.sh`, `modules/common/git/gitmaster.sh`)
 - **`modules/common/git_cloud_patch.sh`**: Nieuw cross-platform (`[UNI]`) modulebestand met `git_apply_cloud_patch([patch_file], [target_branch])`, geconverteerd vanuit `apply-cloud-patch.sh` (zonder top-level `set -euo pipefail`, `exit` vervangen door `return` voor `ui_run_safe`, Tab-autocomplete, `0`-annulering, branch-selector `N`/`M`/bestaand, dubbele `diff --git`-detectie, `git apply --check` + `--3way`, commit, push en auto-cleanup).

@@ -1,9 +1,9 @@
 # Changelog
 
-## [Unreleased]
+## [1.2.0] - 2026-11-21
 
 ### Added
-- **`gitmaster` (`patch` / `apply-patch`)**: Cross-platform Antigravity Cloud `.patch` selector met 3-way apply fallback, branch-kiezer, push naar `origin` en automatische patch-cleanup.
+- **`gitmaster` (`Apply .patch` / `patch` / `apply-patch`)**: Cross-platform Antigravity Cloud `.patch` selector met 3-way apply fallback, branch-kiezer, push naar `origin` en automatische patch-cleanup (QNAP BusyBox + macOS BSD compatibel).
 
 ## [1.1.0] - 2026-11-18
 

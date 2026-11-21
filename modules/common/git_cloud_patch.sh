@@ -1,33 +1,16 @@
 #!/usr/bin/env bash
 # modules/common/git_cloud_patch.sh - Cross-platform Antigravity Cloud .patch selector & 3-way applier
 
-# Helper voor pad-invoer met Tab-autocomplete
-_gcp_read_patch_path() {
-    local prompt="$1"
-    local input=""
-    if read -e -t 0 </dev/null 2>/dev/null; then
-        read -e -r -p "$prompt" input
-    else
-        read -r -p "$prompt" input
-    fi
-    input="${input#"${input%%[![:space:]]*}"}"
-    input="${input%"${input##*[![:space:]]}"}"
-    if [[ "$input" == "~/"* ]]; then
-        input="${HOME}/${input:2}"
-    fi
-    printf '%s' "$input"
-}
-
 # Helper om een bestandsnaam op te schonen tot een geldige Git branch-naam
 _gcp_sanitize_branch_suggestion() {
     local raw="$1"
-    raw="$(printf '%s' "$raw" | sed -E 's/[[:space:]]*\([0-9]+\)$//; s/[[:space:]]+/-/g')"
+    raw="$(printf '%s' "$raw" | sed 's/[[:space:]]*([0-9][0-9]*)$//; s/[[:space:]][[:space:]]*/-/g')"
     if [[ "$raw" == feature-* ]]; then
         raw="feature/${raw#feature-}"
     elif [[ "$raw" == fix-* ]]; then
         raw="fix/${raw#fix-}"
     fi
-    raw="$(printf '%s' "$raw" | tr -cd '[:alnum:]._/-' | sed -E 's|/+|/|g; s|^/||; s|/$||')"
+    raw="$(printf '%s' "$raw" | tr -cd '[:alnum:]._/-' | sed 's|//*|/|g; s|^/||; s|/$||')"
     printf '%s' "$raw"
 }
 
@@ -81,7 +64,7 @@ git_apply_cloud_patch() {
             elif [[ "$CHOICE" =~ ^[0-9]+$ ]] && (( CHOICE >= 1 && CHOICE <= ${#PATCH_LIST[@]} )); then
                 PATCH_FILE="${PATCH_LIST[$((CHOICE - 1))]}"
             elif [[ "$CHOICE" == "p" || "$CHOICE" == "P" ]]; then
-                PATCH_FILE="$(_gcp_read_patch_path "Pad naar .patch bestand (0 = annuleren): ")"
+                ui_read_path PATCH_FILE "Pad naar .patch bestand (0 = annuleren)"
             else
                 if [[ -f "$CHOICE" ]]; then
                     PATCH_FILE="$CHOICE"
@@ -95,7 +78,7 @@ git_apply_cloud_patch() {
             fi
         else
             echo -e "${YELLOW}[INFO]${NC} Geen .patch bestanden gevonden in $REPO_ROOT."
-            PATCH_FILE="$(_gcp_read_patch_path "Geef het pad naar het .patch bestand (0 = annuleren): ")"
+            ui_read_path PATCH_FILE "Geef het pad naar het .patch bestand (0 = annuleren)"
         fi
     fi
 
@@ -283,7 +266,7 @@ git_apply_cloud_patch() {
 
         if [[ -n "$(git status --porcelain | grep -v '\.patch$' || true)" ]]; then
             local PATCH_SUBJECT
-            PATCH_SUBJECT="$(grep -m 1 '^Subject:' "$PATCH_FILE" | sed -E 's/^Subject:[[:space:]]*(\[PATCH[^]]*\][[:space:]]*)?//' || true)"
+            PATCH_SUBJECT="$(grep -m 1 '^Subject:' "$PATCH_FILE" | sed 's/^Subject:[[:space:]]*//; s/^\[PATCH[^]]*\][[:space:]]*//' || true)"
             if [[ -z "$PATCH_SUBJECT" ]]; then
                 PATCH_SUBJECT="feat: apply cloud patch $(basename "$PATCH_FILE" .patch)"
             fi
