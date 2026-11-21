@@ -14,6 +14,90 @@ _gcp_sanitize_branch_suggestion() {
     printf '%s' "$raw"
 }
 
+resolve_patch_conflicts() {
+    local target_branch="$1"
+    local -a conflict_files=()
+    local cf=""
+    while IFS= read -r cf; do
+        [[ -n "$cf" ]] && conflict_files+=("$cf")
+    done < <(git diff --name-only --diff-filter=U 2>/dev/null || true)
+
+    if [[ ${#conflict_files[@]} -eq 0 ]]; then
+        return 0
+    fi
+
+    echo -e "${RED}[CONFLICT]${NC} 3-way merge gaf conflicten (mogelijk door cumulatieve patch op '${target_branch}'):"
+    git status -s | grep -v '\.patch$' || true
+    echo ""
+    echo -e "${BOLD}Conflict-Wizard — Hoe wil je deze conflicten oplossen?${NC}"
+    echo -e "  ${GREEN}1)${NC} Patch-versie accepteren voor alle conflicten (--theirs) ${CYAN}[Aanbevolen bij Cloud-patches]${NC}"
+    echo -e "  ${CYAN}2)${NC} Per bestand kiezen (Patch [--theirs] / Huidige [--ours] / Beiden samenvoegen)"
+    echo -e "  ${YELLOW}3)${NC} Huidige branch-versie behouden (--ours)"
+    echo -e "  ${RED}0)${NC} Volledig annuleren & terugdraaien (git reset --hard HEAD) [Default]"
+    echo ""
+
+    local conf_choice=""
+    read -r -p "Keuze [0]: " conf_choice
+    conf_choice="${conf_choice:-0}"
+
+    case "$conf_choice" in
+        1)
+            for cf in "${conflict_files[@]}"; do
+                git checkout --theirs -- "$cf" && git add -- "$cf"
+                if grep -q '<<<<<<<' "$cf" 2>/dev/null; then
+                    echo -e "${YELLOW}[LET OP]${NC} '$cf' bevat nog '<<<<<<<' markers; controleer handmatig."
+                fi
+            done
+            echo -e "${GREEN}[OK]${NC} Alle conflicten opgelost met Patch-versie (--theirs)."
+            return 0
+            ;;
+        2)
+            local file_choice=""
+            for cf in "${conflict_files[@]}"; do
+                echo ""
+                echo -e "${BOLD}Bestand:${NC} ${CYAN}${cf}${NC}"
+                echo -e "  1) Patch (--theirs)  2) Huidige (--ours)  3) Beiden samenvoegen (handmatig)  0) Annuleren"
+                read -r -p "Keuze voor '$cf' [1]: " file_choice
+                file_choice="${file_choice:-1}"
+                case "$file_choice" in
+                    1)
+                        git checkout --theirs -- "$cf" && git add -- "$cf"
+                        ;;
+                    2)
+                        git checkout --ours -- "$cf" && git add -- "$cf"
+                        ;;
+                    3)
+                        echo -e "${YELLOW}[INFO]${NC} Los '$cf' handmatig op (zoek op '<<<<<<<') en voer daarna uit:"
+                        echo "  git add -A && git commit && git push -u origin $target_branch"
+                        return 1
+                        ;;
+                    0|q|Q|*)
+                        git reset --hard HEAD
+                        git clean -fd -e "*.patch"
+                        echo -e "${GREEN}[OK]${NC} Geannuleerd; werkdirectory hersteld."
+                        return 2
+                        ;;
+                esac
+            done
+            echo -e "${GREEN}[OK]${NC} Alle conflicten per bestand opgelost."
+            return 0
+            ;;
+        3)
+            for cf in "${conflict_files[@]}"; do
+                git checkout --ours -- "$cf" && git add -- "$cf"
+            done
+            echo -e "${GREEN}[OK]${NC} Alle conflicten opgelost met huidige branch-versie (--ours)."
+            return 0
+            ;;
+        0|q|Q|*)
+            git reset --hard HEAD
+            git clean -fd -e "*.patch"
+            echo -e "${GREEN}[OK]${NC} Volledig geannuleerd; werkdirectory hersteld zonder conflictmarkers."
+            return 2
+            ;;
+    esac
+}
+
 git_apply_cloud_patch() {
     local PATCH_FILE="${1:-}"
     local TARGET_BRANCH="${2:-}"
@@ -191,6 +275,39 @@ git_apply_cloud_patch() {
     echo -e "Doelbranch : ${GREEN}$TARGET_BRANCH${NC}"
     echo ""
 
+    if [[ "$TARGET_BRANCH" == "main" ]]; then
+        local FALLBACK_BR
+        FALLBACK_BR="$(_gcp_sanitize_branch_suggestion "$(basename "$PATCH_FILE" .patch)")"
+        [[ -z "$FALLBACK_BR" || "$FALLBACK_BR" == "main" ]] && FALLBACK_BR="feature/cloud-patch"
+        [[ "$FALLBACK_BR" != feature/* && "$FALLBACK_BR" != fix/* ]] && FALLBACK_BR="feature/${FALLBACK_BR}"
+
+        echo -e "${YELLOW}[WAARSCHUWING]${NC} Je staat op het punt deze patch direct op '${RED}main${NC}' toe te passen."
+        echo -e "  ${GREEN}1)${NC} Uitwijken naar veilige branch '${CYAN}${FALLBACK_BR}${NC}' (Aanbevolen)"
+        echo -e "  ${YELLOW}2)${NC} Doorgaan op 'main' met Cloud-patch overschrijfmodus"
+        echo -e "  ${RED}0)${NC} Annuleren"
+        local MAIN_CHOICE=""
+        read -r -p "Keuze [1]: " MAIN_CHOICE
+        MAIN_CHOICE="${MAIN_CHOICE:-1}"
+        case "$MAIN_CHOICE" in
+            1)
+                TARGET_BRANCH="$FALLBACK_BR"
+                echo -e "${GREEN}[OK]${NC} Doelbranch gewijzigd naar '${TARGET_BRANCH}'."
+                ;;
+            2)
+                echo -e "${YELLOW}[INFO]${NC} Doorgaan op 'main'."
+                ;;
+            0|q|Q)
+                echo -e "${YELLOW}[INFO]${NC} Geannuleerd door gebruiker."
+                return 0
+                ;;
+            *)
+                echo -e "${RED}[FOUT]${NC} Ongeldige keuze."
+                return 1
+                ;;
+        esac
+        echo ""
+    fi
+
     # 5. Controleer of er geen onbedoelde lokale wijzigingen of UU-conflictresten openstaan
     local DIRTY_FILES RESET_CHOICE
     DIRTY_FILES="$(git status --porcelain | grep -v '\.patch$' || true)"
@@ -243,26 +360,29 @@ git_apply_cloud_patch() {
     fi
 
     # Probeer eerst schoon, daarna 3-way (slaat reeds gemergede commits automatisch over)
-    if git apply --check --whitespace=nowarn "$PATCH_FILE" 2>/dev/null; then
-        git apply --whitespace=nowarn "$PATCH_FILE" || return 1
+    if git apply --check --exclude='*.patch' --whitespace=nowarn "$PATCH_FILE" 2>/dev/null; then
+        git apply --exclude='*.patch' --whitespace=nowarn "$PATCH_FILE" || return 1
         echo -e "${GREEN}[OK]${NC} Patch schoon toegepast."
         PATCH_APPLIED=true
-    elif git apply --3way --whitespace=nowarn "$PATCH_FILE"; then
+    elif git apply --3way --exclude='*.patch' --whitespace=nowarn "$PATCH_FILE"; then
         echo -e "${GREEN}[OK]${NC} Patch toegepast via 3-way merge (reeds aanwezige wijzigingen overgeslagen)."
         PATCH_APPLIED=true
     else
-        echo -e "${RED}[CONFLICT]${NC} Handmatige conflictresolutie nodig (zoek op '<<<<<<<')."
-        echo "Los de conflicten op in de onderstaande bestanden, voer 'git add -A && git commit' uit, en push daarna:"
-        git status -s | grep -v '\.patch$' || true
-        echo ""
-        echo "  git push -u origin $TARGET_BRANCH"
-        return 1
+        resolve_patch_conflicts "$TARGET_BRANCH"
+        local wiz_rc=$?
+        if [[ $wiz_rc -eq 0 ]]; then
+            PATCH_APPLIED=true
+        elif [[ $wiz_rc -eq 2 ]]; then
+            return 0
+        else
+            return 1
+        fi
     fi
 
     # 9. Commit de toegepaste wijzigingen (indien er netto nog nieuwe wijzigingen overbleven)
     if [[ "$PATCH_APPLIED" == "true" ]]; then
         git add -A
-        git reset -- "$PATCH_FILE" 2>/dev/null || true
+        git reset -- '*.patch' 2>/dev/null || true
 
         if [[ -n "$(git status --porcelain | grep -v '\.patch$' || true)" ]]; then
             local PATCH_SUBJECT
